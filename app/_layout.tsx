@@ -1,29 +1,35 @@
-import { Stack } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { User, onAuthStateChanged } from "@firebase/auth";
 import { firebaseAuth } from "@/FirebaseAuthentication";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import loginpage from "./loginpage";
+import index from "./index";
+
+const Stack = createNativeStackNavigator();
 
 export default function RootLayout() {
 
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    console.log(user);
-    onAuthStateChanged(firebaseAuth, (user) => {
+    const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
       console.log('user', user);
       setUser(user);
     });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
+
   return (
-    <Stack>
-      { user ? (
-        <Stack.Screen name="index" options = {{headerShown: false}} />
+    <Stack.Navigator>
+      {user ? (
+        <Stack.Screen name="index" component={index} options={{ headerShown: false }} />
       ) : (
-        <Stack.Screen name="login" options = {{headerShown: false}} />
+        <Stack.Screen name="loginpage" component={loginpage} options={{ headerShown: false }} />
       )}
-      </Stack>
-  );
+    </Stack.Navigator>
+  )
 }
-
-

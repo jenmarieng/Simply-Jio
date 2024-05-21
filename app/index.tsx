@@ -1,6 +1,6 @@
 import { firebaseAuth } from "../FirebaseAuthentication";
-import { signOut } from "@firebase/auth"
-import { View, StyleSheet, SafeAreaView, Button} from "react-native";
+import { signOut } from "firebase/auth"
+import { View, StyleSheet, SafeAreaView, Button } from "react-native";
 
 const styles = StyleSheet.create({
   container: {
@@ -28,5 +28,3 @@ export default function Index() {
     </View>
   );
 }
-
-//<Button onPress={() => signOut(firebaseAuth)} title="Log out"/>
