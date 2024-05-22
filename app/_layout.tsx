@@ -22,14 +22,12 @@ export default function RootLayout() {
     };
   }, []);
 
-
   return (
-    <Stack.Navigator>
-      {user ? (
-        <Stack.Screen name="index" component={index} options={{ headerShown: false }} />
-      ) : (
+    <Stack.Navigator initialRouteName="loginpage">
+      {user ? <Stack.Screen name="index" component={index} options={{ headerShown: false }} />
+        :
         <Stack.Screen name="loginpage" component={loginpage} options={{ headerShown: false }} />
-      )}
+      }
     </Stack.Navigator>
-  )
+  );
 }
