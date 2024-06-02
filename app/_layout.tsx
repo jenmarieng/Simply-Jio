@@ -3,7 +3,7 @@ import { User, onAuthStateChanged } from "@firebase/auth";
 import { firebaseAuth } from "@/FirebaseAuthentication";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import loginpage from "./loginpage";
-import index from "./index";
+import drawerNav from "./drawerNav";
 
 const Stack = createNativeStackNavigator();
 
@@ -24,7 +24,7 @@ export default function RootLayout() {
 
   return (
     <Stack.Navigator initialRouteName="loginpage">
-      {user ? <Stack.Screen name="index" component={index} options={{ headerShown: false }} />
+      {user ? <Stack.Screen name="drawerNav" component={drawerNav} options={{ headerShown: false }} />
         :
         <Stack.Screen name="loginpage" component={loginpage} options={{ headerShown: false }} />
       }
