@@ -8,7 +8,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'blanchedalmond',
   },
   text: {
-    marginBottom: '120%',
+    paddingBottom: '80%',
     alignSelf: 'center',
     fontSize: 28,
   }
