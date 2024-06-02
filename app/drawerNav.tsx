@@ -89,7 +89,7 @@ function LogoTitle() {
 
 export default function DrawerNav() {
   return (
-    <Drawer.Navigator initialRouteName="index" drawerContent={(props) => <CustomDrawerContent {...props} />}>
+    <Drawer.Navigator initialRouteName="SimplyJio!" drawerContent={(props) => <CustomDrawerContent {...props} />}>
       <Drawer.Screen name="SimplyJio!" component={index} options={{ headerTitle: () => <LogoTitle />, headerTitleAlign: 'center' }} />
       <Drawer.Screen name="Settings" component={settings} />
     </Drawer.Navigator>

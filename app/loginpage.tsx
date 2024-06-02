@@ -1,7 +1,8 @@
 import { Text, View, TextInput, StyleSheet, ActivityIndicator, Pressable, ImageBackground } from 'react-native'
 import React, { useState } from 'react'
 import { firebaseAuth } from '../FirebaseAuthentication';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from '@firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from '@firebase/auth';
+import { useNavigation } from '@react-navigation/native';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -22,47 +23,35 @@ const Login = () => {
     }
   };
 
-  const signUp = async () => {
-    setLoading(true);
+  const forgotPassword = async () => {
     try {
-      const response = await createUserWithEmailAndPassword(auth, email, password);
-      console.log(response);
-      alert('Account has been created! You will be logged in.');
+      await sendPasswordResetEmail(auth, email);
+      alert('Password reset email sent!');
     } catch (error: any) {
       console.log(error);
-      alert('Sign-up failed: ' + error.message);
-    } finally {
-      setLoading(false);
+      alert('Error resetting password: ' + error.message + 'Check that you have an account with the correct email!');
     }
   };
 
-  const forgotPassword = async () => {
-    try {
-    await sendPasswordResetEmail(auth, email);
-    alert('Password reset email sent!');
-    } catch (error: any) {
-    console.log(error);
-    alert('Error resetting password: ' + error.message + 'Check that you have an account with the correct email!');
-    }
-  };
+  const navigation = useNavigation() as any;
 
   return (
     <View style={styles.container}>
       <ImageBackground source={require('../assets/images/startupImage.png')} resizeMode="cover" style={styles.image}>
-        <TextInput value={email} style={[styles.input, {marginTop: '40%'}]} placeholder="Enter your email" onChangeText={(text) => setEmail(text)} autoCapitalize='none'/>
-        <TextInput secureTextEntry={true} value={password} style={styles.input} placeholder="Enter your password" onChangeText={(text) => setPassword(text)} autoCapitalize='none'/>
+        <TextInput value={email} style={[styles.input, { marginTop: '40%' }]} placeholder="Enter your email" onChangeText={(text) => setEmail(text)} autoCapitalize='none' />
+        <TextInput secureTextEntry={true} value={password} style={styles.input} placeholder="Enter your password" onChangeText={(text) => setPassword(text)} autoCapitalize='none' />
         {loading ? (
           <ActivityIndicator size='large' color='#0000ff' />
         ) : (
           <>
-           <Pressable style={styles.forgotPasswordButton} onPress={forgotPassword}>
-              <Text style={{textDecorationLine: 'underline', color: 'red'}}>Reset password</Text>
+            <Pressable style={styles.forgotPasswordButton} onPress={forgotPassword}>
+              <Text style={{ textDecorationLine: 'underline', color: 'red' }}>Reset password</Text>
             </Pressable>
             <Pressable style={styles.loginButton} onPress={signIn}>
               <Text>LOGIN</Text>
             </Pressable>
-            <Text style={styles.text}>Don't have an account yet?{"\n"}Enter your details above and sign up!</Text>
-            <Pressable style={styles.signupButton} onPress={signUp}>
+            <Text style={styles.text}>Don't have an account yet?</Text>
+            <Pressable style={styles.signupButton} onPress={() => navigation.navigate('signuppage')}>
               <Text>SIGNUP</Text>
             </Pressable>
           </>
