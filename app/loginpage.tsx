@@ -61,7 +61,7 @@ const Login = () => {
             <Pressable style={styles.loginButton} onPress={signIn}>
               <Text>LOGIN</Text>
             </Pressable>
-            <Text style={styles.text}>Don't have an account yet?</Text>
+            <Text style={styles.text}>Don't have an account yet?{"\n"}Enter your details above and sign up!</Text>
             <Pressable style={styles.signupButton} onPress={signUp}>
               <Text>SIGNUP</Text>
             </Pressable>
@@ -119,8 +119,9 @@ const styles = StyleSheet.create({
   },
   text: {
     paddingVertical: 10,
-    paddingTop: '15%',
+    paddingTop: '10%',
     alignSelf: 'center',
-    fontSize: 18,
+    textAlign: 'center',
+    fontSize: 15,
   }
 });
