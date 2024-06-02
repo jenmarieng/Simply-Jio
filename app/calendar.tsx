@@ -1,11 +1,6 @@
 import React, { useState } from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
-import { Calendar, LocaleConfig } from 'react-native-calendars';
+import { SafeAreaView, StyleSheet } from 'react-native';
+import { Calendar } from 'react-native-calendars';
 
 function App() {
   const [selected, setSelected] = useState('');  
@@ -22,12 +17,10 @@ function App() {
 
       style={{
         borderRadius: 5,
-        elevation: 5,
-        borderWidth: 4,
-        borderColor: 'rgba(100, 100, 0, 0.3)',
         height: 380,
-        width: 350
+        width: 350,
       }}
+      
       theme={{
         calendarBackground: '#fff',
         dayTextColor: '#000',
@@ -54,7 +47,8 @@ function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center'
+    justifyContent: 'center',
+    alignSelf: 'center',
   },
 });
 
