@@ -1,9 +1,8 @@
 import { Text, View, TextInput, StyleSheet, ActivityIndicator, Pressable, ImageBackground } from 'react-native'
 import React, { useState } from 'react'
-import { firebaseAuth } from '../FirebaseAuthentication';
+import { firebaseAuth } from '../../FirebaseConfig';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from '@firebase/auth';
 import { useNavigation } from '@react-navigation/native';
-
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -37,7 +36,7 @@ const Login = () => {
 
   return (
     <View style={styles.container}>
-      <ImageBackground source={require('../assets/images/startupImage.png')} resizeMode="cover" style={styles.image}>
+      <ImageBackground source={require('../../assets/images/startupImage.png')} resizeMode="cover" style={styles.image}>
         <TextInput value={email} style={[styles.input, { marginTop: '40%' }]} placeholder="Enter your email" onChangeText={(text) => setEmail(text)} autoCapitalize='none' />
         <TextInput secureTextEntry={true} value={password} style={styles.input} placeholder="Enter your password" onChangeText={(text) => setPassword(text)} autoCapitalize='none' />
         {loading ? (
@@ -51,7 +50,7 @@ const Login = () => {
               <Text>LOGIN</Text>
             </Pressable>
             <Text style={styles.text}>Don't have an account yet?</Text>
-            <Pressable style={styles.signupButton} onPress={() => navigation.navigate('signuppage')}>
+            <Pressable style={styles.signupButton} onPress={() => navigation.navigate('authScreens/signuppage')}>
               <Text>SIGNUP</Text>
             </Pressable>
           </>
@@ -72,7 +71,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   input: {
-    backgroundColor: '#ffdab9',
+    backgroundColor: '#ffd0a5',
     borderRadius: 15,
     padding: 15,
     marginBottom: 15,
@@ -88,8 +87,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: "limegreen",
   },
-  signupButton:
-  {
+  signupButton: {
     alignItems: 'center',
     alignSelf: 'center',
     paddingVertical: 10,
@@ -98,8 +96,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: "paleturquoise",
   },
-  forgotPasswordButton:
-  {
+  forgotPasswordButton: {
     alignItems: 'center',
     alignSelf: 'center',
     paddingLeft: '35%',

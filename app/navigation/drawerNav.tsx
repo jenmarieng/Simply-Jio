@@ -1,9 +1,9 @@
 import 'react-native-gesture-handler';
 import React, { useEffect, useState } from 'react';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItem, DrawerItemList } from '@react-navigation/drawer';
-import index from "./index";
-import settings from "./MyTabs/settings";
-import { firebaseAuth } from "../FirebaseAuthentication";
+import index from "../index";
+import settings from "../MyTabs/settings";
+import { firebaseAuth } from "../../FirebaseConfig";
 import { signOut } from "firebase/auth";
 import { Image, StyleSheet, View, Text } from 'react-native';
 
@@ -19,22 +19,6 @@ const handleSignOut = async () => {
 
 const Drawer = createDrawerNavigator();
 
-const styles = StyleSheet.create({
-  userInfoWrapper: {
-    flexDirection: "row",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderBottomColor: "#ccc",
-    borderBottomWidth: 1,
-    marginBottom: 10,
-  },
-  userDetailsWrapper: {
-    marginLeft: 10,
-  },
-  text: {
-    color: 'grey',
-  }
-});
 type User = {
   displayName: string | null;
   email: string | null;
@@ -82,10 +66,27 @@ function LogoTitle() {
   return (
     <Image
       style={{ resizeMode: 'contain', width: 200, height: 50 }}
-      source={require('../assets/images/SJLogo.png')}
+      source={require('../../assets/images/SJLogo.png')}
     />
   );
 }
+
+const styles = StyleSheet.create({
+  userInfoWrapper: {
+    flexDirection: "row",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderBottomColor: "#ccc",
+    borderBottomWidth: 1,
+    marginBottom: 10,
+  },
+  userDetailsWrapper: {
+    marginLeft: 10,
+  },
+  text: {
+    color: 'grey',
+  }
+});
 
 export default function DrawerNav() {
   return (
