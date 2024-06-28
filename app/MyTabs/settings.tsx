@@ -1,40 +1,8 @@
 import * as React from 'react';
 import { useState } from 'react';
 import { Pressable, View, Text, StyleSheet, TextInput } from 'react-native';
-import { firebaseAuth } from '../../FirebaseAuthentication';
+import { firebaseAuth } from '../../FirebaseConfig';
 import { updateProfile, updateEmail, updatePassword } from 'firebase/auth';
-
-const styles = StyleSheet.create({
-  text: {
-    fontSize: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-  },
-  updateButton: {
-    alignItems: 'center',
-    alignSelf: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    marginBottom: 20,
-    elevation: 4,
-    borderRadius: 4,
-    backgroundColor: "burlywood",
-  },
-  input: {
-    backgroundColor: 'beige',
-    borderRadius: 15,
-    padding: 15,
-    marginBottom: 15,
-    width: '60%',
-    alignSelf: 'center',
-  },
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    backgroundColor: 'wheat',
-  },
-});
 
 const Settings = () => {
   const [displayName, setDisplayName] = useState('');
@@ -114,5 +82,37 @@ const Settings = () => {
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  text: {
+    fontSize: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  updateButton: {
+    alignItems: 'center',
+    alignSelf: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    marginBottom: 20,
+    elevation: 4,
+    borderRadius: 4,
+    backgroundColor: "burlywood",
+  },
+  input: {
+    backgroundColor: 'beige',
+    borderRadius: 15,
+    padding: 15,
+    marginBottom: 15,
+    width: '60%',
+    alignSelf: 'center',
+  },
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    backgroundColor: 'wheat',
+  },
+});
 
 export default Settings;

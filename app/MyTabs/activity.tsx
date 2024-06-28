@@ -1,5 +1,13 @@
 import { View, Text, StyleSheet } from 'react-native';
 
+const Activities = () => {
+  return (
+    <View style={styles.text}>
+      <Text>There will be activity suggestions here!</Text>
+    </View>
+  )
+}
+
 const styles = StyleSheet.create({
   text: {
     fontSize: 28,
@@ -9,13 +17,5 @@ const styles = StyleSheet.create({
     flex: 1,
   }
 });
-
-const Activities = () => {
-  return (
-    <View style={styles.text}>
-      <Text>There will be activity suggestions here!</Text>
-    </View>
-  )
-}
 
 export default Activities;

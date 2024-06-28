@@ -1,7 +1,9 @@
 import { View, Text, ImageBackground, TextInput, StyleSheet, Pressable, ActivityIndicator } from 'react-native'
 import React, { useState } from 'react'
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { firebaseAuth } from '../FirebaseAuthentication';
+import { firebaseAuth } from '../../FirebaseConfig';
+import loginpage from './loginpage';
+import { useNavigation } from '@react-navigation/native';
 
 const SignUp = () => {
     const [email, setEmail] = useState('');
@@ -22,9 +24,11 @@ const SignUp = () => {
         }
     };
 
+    const navigation = useNavigation() as any;
+
     return (
         <View style={styles.container}>
-            <ImageBackground source={require('../assets/images/startupImage.png')} resizeMode="cover" style={styles.image}>
+            <ImageBackground source={require('../../assets/images/startupImage.png')} resizeMode="cover" style={styles.image}>
                 <Text style={styles.text}>Register for an account now!</Text>
                 <TextInput value={email} style={styles.input} placeholder="Enter your email" onChangeText={(text) => setEmail(text)} autoCapitalize='none' />
                 <TextInput secureTextEntry={true} value={password} style={styles.input} placeholder="Enter your password" onChangeText={(text) => setPassword(text)} autoCapitalize='none' />
@@ -34,6 +38,9 @@ const SignUp = () => {
                     <>
                         <Pressable style={styles.signupButton} onPress={createUser}>
                             <Text>CREATE ACCOUNT</Text>
+                        </Pressable>
+                        <Pressable style={styles.backButton} onPress={() => navigation.navigate('authScreens/loginpage')}>
+                            <Text>Back to Login Page</Text>
                         </Pressable>
                     </>
                 )}
@@ -53,7 +60,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     input: {
-        backgroundColor: '#ffdab9',
+        backgroundColor: '#ffd0a5',
         borderRadius: 15,
         padding: 15,
         marginBottom: 15,
@@ -69,9 +76,19 @@ const styles = StyleSheet.create({
         borderRadius: 4,
         backgroundColor: "limegreen",
     },
+    backButton: {
+        alignItems: 'center',
+        alignSelf: 'center',
+        paddingVertical: 10,
+        paddingHorizontal: 10,
+        marginTop: 50,
+        elevation: 4,
+        borderRadius: 4,
+        backgroundColor: "lightgrey",
+    },
     text: {
-        marginTop: '20%',
-        marginBottom: '8%',
+        marginTop: '40%',
+        marginBottom: '7%',
         alignSelf: 'center',
         textAlign: 'center',
         fontSize: 25,
