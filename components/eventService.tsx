@@ -8,11 +8,15 @@ export const createEvent = async (name: string) => {
     console.log('User not logged in');
     return null;
   }
+  if (!user.displayName) {
+    alert('Please set a display name first!');
+    return null;
+  };
   //const username = await getUsername(user.uid); 
   const docRef = await addDoc(collection(db, 'events'), {
     name,
-    creator: [{ userId: user.uid, displayName: user.displayName || 'Anonymous', email: user.email }],
-    participants: [{ userId: user.uid, displayName: user.displayName || 'Anonymous', email: user.email }],
+    creator: [{ userId: user.uid, displayName: user.displayName, email: user.email }],
+    participants: [{ userId: user.uid, displayName: user.displayName, email: user.email }],
   });
   return docRef.id;
 };
@@ -32,8 +36,12 @@ export const joinEvent = async (eventId: string) => {
   const existingParticipant = eventData.participants.find((participant: any) => participant.userId === user.uid);
   //const username = await getUsername(user.uid); 
   if (!existingParticipant) {
+    if (!user.displayName) {
+      alert('Please set a display name first!');
+      return null;
+    }
     await updateDoc(eventRef, {
-      participants: arrayUnion({ userId: user.uid, displayName: user.displayName || 'Anonymous', email: user.email }),
+      participants: arrayUnion({ userId: user.uid, displayName: user.displayName, email: user.email }),
     });
   }
   return docSnap.data();
