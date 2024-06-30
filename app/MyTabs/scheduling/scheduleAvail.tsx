@@ -78,6 +78,7 @@ const ScheduleAvailabilityScreen = () => {
             data[date][timeSlot].push(displayName);
           });
         });
+        //console.log('Fetched Availability Data:', data);
         setAvailabilityData(data);
       }
     );
@@ -90,6 +91,7 @@ const ScheduleAvailabilityScreen = () => {
       setEventName(eventData.name);
       setParticipants(eventData.participants);
       setParticipantNames(eventData.participants.map((p: { displayName: string }) => p.displayName));
+      //console.log('Fetched Participants:', eventData.participants);
     };
     fetchEventData();
   }, [eventId]);
@@ -99,11 +101,12 @@ const ScheduleAvailabilityScreen = () => {
       if (user) {
         const userAvailability = await getUserAvailability(eventId, user.uid);
         setSelectedTimeSlots(userAvailability);
+        //console.log('Fetched User Availability:', userAvailability);
       }
     };
     fetchUserAvailability();
   }, [eventId, user]);
-
+  
   const handleSaveAvailability = async () => {
     if (user) {
       for (const [date, timeSlots] of Object.entries(selectedTimeSlots)) {
@@ -154,12 +157,13 @@ const ScheduleAvailabilityScreen = () => {
 
   const handleTimeSlotSelectForDetails = (date: string, timeSlot: string) => {
     const users = availabilityData?.[date]?.[timeSlot] || [];
+    //console.log('Users available at', date, timeSlot, ':', users);
     setAvailableParticipants(users);
     setUnavailableParticipants(participants.filter(p => !users.includes(p.displayName)).map(p => p.displayName));
     setSelectedDate(date);
     setSelectedTime(timeSlot);
   };
-
+  
   const renderGroupAvailabilityRow = (time: string) => {
     return (
       <View key={time} style={styles.tableRow}>
@@ -177,16 +181,14 @@ const ScheduleAvailabilityScreen = () => {
               style={[styles.tableCell, { backgroundColor }]}
               onPress={() => handleTimeSlotSelectForDetails(date, time)}
             >
-              {users.length > 0 ?
-                <Text>{fraction}</Text>
-                : null}
+              {users.length > 0 ? <Text>{fraction}</Text> : null}
             </TouchableOpacity>
           );
         })}
       </View>
     );
   };
-
+  
   const copyToClipboard = async () => {
     await Clipboard.setStringAsync(eventId);
     alert('Copied to clipboard!');
