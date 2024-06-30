@@ -34,6 +34,7 @@ const Settings = () => {
         style={styles.input}
         placeholder="Enter your new email"
         onChangeText={(text) => setNewEmail(text)}
+        autoCapitalize='none'
       />
       <Pressable style={styles.updateButton} onPress={() => {handleUpdateEmail(newEmail), setNewEmail('') }}>
         <Text>Update email</Text>
@@ -43,6 +44,8 @@ const Settings = () => {
         style={styles.input}
         placeholder="Enter your new password"
         onChangeText={(text) => setNewPassword(text)}
+        autoCapitalize='none'
+        secureTextEntry={true}
       />
       <Pressable style={styles.updateButton} onPress={() => {handleUpdatePassword(newPassword), setNewPassword('') }}>
         <Text>Update password</Text>

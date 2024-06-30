@@ -70,6 +70,7 @@ const ActivityJio = () => {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.heading}>Select filters or start searching for ActivityJios!</Text>
       <View style={styles.filterContainer}>
         {Object.keys(placesTypes).map((category) => (
           <TouchableOpacity
@@ -125,6 +126,12 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: 'pink',
   },
+  heading: {
+    fontSize: 18,
+    marginLeft: 5,
+    fontWeight: 'bold',
+    color: 'black',
+  },
   filterContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -143,6 +150,7 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   input: {
+    marginTop: -10,
     paddingHorizontal: 10,
     height: 40,
     backgroundColor: 'white',

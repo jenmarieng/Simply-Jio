@@ -14,6 +14,10 @@ const CreateEventScreen = () => {
 
   const handleJoinEvent = async () => {
     try {
+      if (!eventId) {
+        alert('Please enter a Jio Group ID');
+        return;
+      }
       await joinEvent(eventId);
       navigation.navigate('AvailabilityScreen', { eventId });
       setEventId('');

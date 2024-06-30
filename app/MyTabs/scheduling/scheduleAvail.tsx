@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Button, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput, Pressable, ActivityIndicator } from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { saveAvailability, getUserAvailability } from '../../../components/eventService';
-import { subWeeks, addWeeks, format, startOfWeek, addDays, set } from 'date-fns';
+import { subWeeks, addWeeks, format, startOfWeek, addDays, set, getHours, getMinutes } from 'date-fns';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { onSnapshot, collection, addDoc } from 'firebase/firestore';
 import { db, firebaseAuth } from '../../../FirebaseConfig';
@@ -11,8 +11,7 @@ import * as Clipboard from 'expo-clipboard';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Icon2 from 'react-native-vector-icons/Ionicons';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { startGroupFromJio } from '../../../components/chatService';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { startGroupFromJio, checkIsChatCreated } from '../../../components/chatService';
 
 type RootStackParamList = {
   ScheduleAvailability: { eventId: string };
@@ -208,26 +207,21 @@ const ScheduleAvailabilityScreen = () => {
     const [chatId, setChatId] = useState('');
     const navigation = useNavigation() as any;
 
-    useEffect(() => {
-      const loadChatGroupId = async () => {
-        const storedChatId = await AsyncStorage.getItem('chatGroupId');
-        if (storedChatId) {
-          setChatId(storedChatId);
-          setCreatedChat(true);
-        }
-      };
-
-      loadChatGroupId();
-    }, []);
-
-
     const confirmSlots = async () => {
       setIsModalVisible(true);
     };
 
     const saveEventSlot = async () => {
-      if (!selectedJioDate || !selectedJioStartTime || !selectedJioEndTime || !selectedJioName) {
-        alert('Please fill in all fields');
+      if (!selectedJioDate || !selectedJioName) {
+        alert('Jio Name cannot be empty.');
+        return;
+      }
+      if (getHours(selectedJioStartTime) == getHours(selectedJioEndTime) && getMinutes(selectedJioStartTime) == getMinutes(selectedJioEndTime)) {
+        alert('Start and end time cannot be the same');
+        return;
+      }
+      if (selectedJioEndTime < selectedJioStartTime) {
+        alert('End time cannot be before start time');
         return;
       }
 
@@ -258,7 +252,7 @@ const ScheduleAvailabilityScreen = () => {
       setSelectedJioDate(new Date());
       setSelectedJioStartTime(new Date());
       setSelectedJioEndTime(new Date());
-      alert('Event saved to calendar!');
+      alert('Jio saved to calendar!');
     };
 
     const handleDateChange = (event: any, date?: Date) => {
@@ -281,15 +275,18 @@ const ScheduleAvailabilityScreen = () => {
       }
     };
 
+    useEffect(() => {
+      checkIsChatCreated(eventId).then((result) => {
+        setCreatedChat(result);
+      })
+    })
+
     const createGroupChat = async () => {
       const chatGroupId = await startGroupFromJio(eventName, eventId);
-      setCreatedChat(true);
       if (chatGroupId) {
-        await AsyncStorage.setItem('chatGroupId', chatGroupId);
-        setCreatedChat(true);
         setChatId(chatGroupId);
       }
-    }
+    };
 
     return (
       <View style={styles.container}>
@@ -463,6 +460,26 @@ const ScheduleAvailabilityScreen = () => {
 
     const confirmTimeRange = () => {
       if (startTime && endTime) {
+        const startTimeHours = getHours(startTime);
+        const endTimeHours = getHours(endTime);
+        const startTimeMinutes = getMinutes(startTime);
+        const endTimeMinutes = getMinutes(endTime);
+        if (startTimeHours < 7 || startTimeHours > 19 || endTimeHours < 7 || endTimeHours > 19) {
+          alert('Error. Only slots from 7am to 11.30pm are available for now');
+          return;
+        }
+        if (startTimeHours == endTimeHours && startTimeMinutes == endTimeMinutes) {
+          alert('Error. Start and end time must be different');
+          return;
+        }
+        if (startTimeHours > endTimeHours || startTimeHours === endTimeHours && startTimeMinutes > endTimeMinutes) {
+          alert('Error. Start time must be before end time');
+          return;
+        }
+        if (startTimeMinutes % 30 !== 0 || endTimeMinutes % 30 !== 0) {
+          alert('Error. Start and end time must be multiples of 30 minutes');
+          return;
+        }
         let currentTime = new Date(startTime);
         const endTimeDate = new Date(endTime);
 

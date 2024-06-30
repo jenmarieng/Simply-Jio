@@ -1,8 +1,9 @@
 import { Text, View, TextInput, StyleSheet, ActivityIndicator, Pressable, ImageBackground } from 'react-native'
 import React, { useState } from 'react'
 import { firebaseAuth } from '../../FirebaseConfig';
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from '@firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, fetchSignInMethodsForEmail } from '@firebase/auth';
 import { useNavigation } from '@react-navigation/native';
+
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,11 +25,16 @@ const Login = () => {
 
   const forgotPassword = async () => {
     try {
-      await sendPasswordResetEmail(auth, email);
-      alert('Password reset email sent!');
+      let signInMethods = await fetchSignInMethodsForEmail(firebaseAuth, email);
+      if (signInMethods.length > 0) {      
+        await sendPasswordResetEmail(auth, email);
+        alert('Password reset email sent!');
+      } else {
+        alert('No account found with that email!');
+      }
     } catch (error: any) {
       console.log(error);
-      alert('Error resetting password: ' + error.message + 'Check that you have an account with the correct email!');
+      alert('Error resetting password: ' + error.message + 'Please try again.');
     }
   };
 

@@ -1,5 +1,5 @@
 import { db, firebaseAuth } from '../FirebaseConfig';
-import { collection, addDoc, getDocs, query, doc, getDoc, where, updateDoc, arrayUnion, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, doc, getDoc, where, updateDoc, arrayUnion, onSnapshot } from 'firebase/firestore';
 
 export const startGroup = async (groupName: string) => {
     const user = firebaseAuth.currentUser;
@@ -17,14 +17,19 @@ export const startGroup = async (groupName: string) => {
         return null;
     }
 
+    if (!user.displayName) {
+        alert('Please set a display name first!');
+        return null;
+    }
+
     const groupRef = collection(db, 'groups');
     if (groupRef) {
         try {
             await addDoc(groupRef, {
                 name: groupName || `Group #${Math.floor(Math.random() * 1000)}`,
                 description: 'Chat group',
-                creator: [{ userId: user.uid, displayName: user.displayName || 'Anonymous', username: userData.username, email: user.email }],
-                participants: [{ userId: user.uid, displayName: user.displayName || 'Anonymous', username: userData.username, email: user.email }],
+                creator: [{ userId: user.uid, displayName: user.displayName, email: user.email }],
+                participants: [{ userId: user.uid, displayName: user.displayName, email: user.email }],
             });
         } catch (error) {
             console.log('error creating group', error);
@@ -58,6 +63,10 @@ export const getUserGroups = (userId: string, callback: (groups: any[]) => void)
 
 
 export const addUserToChat = async (groupId: string, participantUsername: string) => {
+    if (!participantUsername) {
+        alert('Please enter a username.');
+        return;
+    }
     try {
         const chatRef = doc(db, 'groups', groupId);
         const docSnap = await getDoc(chatRef);
@@ -81,11 +90,11 @@ export const addUserToChat = async (groupId: string, participantUsername: string
         const existingParticipant = chatData.participants.find((participant: any) => participant.userId === participantId);
         if (!existingParticipant) {
             await updateDoc(chatRef, {
-                participants: arrayUnion({ userId: participantId, name: participantData.displayName || 'Anonymous', username: participantUsername, email: participantData.email }),
+                participants: arrayUnion({ userId: participantId, name: participantData.displayName || 'Anonymous', email: participantData.email }),
             });
-            alert('Participant added to chat!');
+            alert('User added to chat!');
         } else {
-            alert('Participant is already added to chat!');
+            alert('User is already a chat participant.');
         }
         return docSnap.data();
     } catch (error) {
@@ -115,6 +124,11 @@ export const startGroupFromJio = async (groupName: string, eventId: string) => {
         return null;
     }
 
+    if (!user.displayName) {
+        alert('Please set a display name first!');
+        return null;
+    }
+
     const userDocRef = doc(db, 'users', user.uid);
     const userDocSnap = await getDoc(userDocRef);
     const userData = userDocSnap.data();
@@ -130,8 +144,9 @@ export const startGroupFromJio = async (groupName: string, eventId: string) => {
             await addDoc(groupRef, {
                 name: groupName || `Group #${Math.floor(Math.random() * 1000)}`,
                 description: 'Chat group created from Jio Group',
-                creator: [{ userId: user.uid, displayName: user.displayName || 'Anonymous', username: userData.username, email: user.email }],
+                creator: [{ userId: user.uid, displayName: user.displayName, email: user.email }],
                 participants,
+                JioGroupId: eventId,
             });
             alert('Chat group created successfully');
         } catch (error) {
@@ -140,5 +155,17 @@ export const startGroupFromJio = async (groupName: string, eventId: string) => {
         return groupRef.id;
     } else {
         console.log('groupsCollectionRef is null');
+    }
+};
+
+export const checkIsChatCreated = async (eventId: string) => {
+    const groupsRef = collection(db, 'groups');
+    const q = query(groupsRef, where('JioGroupId', '==', eventId));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+        return false;
+    } else {
+        return true;
     }
 };
