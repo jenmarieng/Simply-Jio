@@ -1,65 +1,33 @@
 import * as React from 'react';
 import { useState } from 'react';
 import { Pressable, View, Text, StyleSheet, TextInput } from 'react-native';
-import { firebaseAuth } from '../../FirebaseConfig';
-import { updateProfile, updateEmail, updatePassword } from 'firebase/auth';
+import { handleUpdateDisplayName, handleUpdateUsername, handleUpdateEmail, handleUpdatePassword } from '../../components/userService';
 
 const Settings = () => {
   const [displayName, setDisplayName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
-
-  const handleUpdateDisplayName = async () => {
-    try {
-      if (firebaseAuth.currentUser) {
-        await updateProfile(firebaseAuth.currentUser, {
-          displayName: displayName,
-        })
-        await firebaseAuth.currentUser.reload();
-        alert('Display name updated successfully');
-      }
-    } catch (error) {
-      alert('Error updating name!');
-      console.error('Error updating display name:', error);
-    }
-  };
-
-  const handleUpdateEmail = async () => {
-    try {
-      if (firebaseAuth.currentUser) {
-        await updateEmail(firebaseAuth.currentUser, newEmail)
-        await firebaseAuth.currentUser.reload();
-        alert('Email updated successfully');
-      }
-    } catch (error) {
-      alert('Error updating email!');
-      console.error('Error updating email:', error);
-    }
-  };
-
-  const handleUpdatePassword = async () => {
-    try {
-      if (firebaseAuth.currentUser) {
-        await updatePassword(firebaseAuth.currentUser, newPassword)
-        await firebaseAuth.currentUser.reload();
-        alert('Password updated successfully');
-      }
-    } catch (error) {
-      alert('Error updating password!');
-      console.error('Error updating password:', error);
-    }
-  };
+  const [username, setUsername] = useState('');
 
   return (
     <View style={styles.container}>
       <TextInput
         value={displayName}
         style={styles.input}
-        placeholder="Enter your display name"
+        placeholder="Enter your new display name"
         onChangeText={(text) => setDisplayName(text)}
       />
-      <Pressable style={styles.updateButton} onPress={handleUpdateDisplayName}>
+      <Pressable style={styles.updateButton} onPress={() => {handleUpdateDisplayName(displayName), setDisplayName('') }}>
         <Text>Update display name</Text>
+      </Pressable>
+      <TextInput
+        value={username}
+        style={styles.input}
+        placeholder="Enter your new username"
+        onChangeText={(text) => setUsername(text)}
+      />
+      <Pressable style={styles.updateButton} onPress={() => {handleUpdateUsername(username), setUsername('')}}>
+        <Text>Update username</Text>
       </Pressable>
       <TextInput
         value={newEmail}
@@ -67,7 +35,7 @@ const Settings = () => {
         placeholder="Enter your new email"
         onChangeText={(text) => setNewEmail(text)}
       />
-      <Pressable style={styles.updateButton} onPress={handleUpdateEmail}>
+      <Pressable style={styles.updateButton} onPress={() => {handleUpdateEmail(newEmail), setNewEmail('') }}>
         <Text>Update email</Text>
       </Pressable>
       <TextInput
@@ -76,7 +44,7 @@ const Settings = () => {
         placeholder="Enter your new password"
         onChangeText={(text) => setNewPassword(text)}
       />
-      <Pressable style={styles.updateButton} onPress={handleUpdatePassword}>
+      <Pressable style={styles.updateButton} onPress={() => {handleUpdatePassword(newPassword), setNewPassword('') }}>
         <Text>Update password</Text>
       </Pressable>
     </View>

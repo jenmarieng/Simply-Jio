@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { createEvent, joinEvent, getUserEvents } from '../../../components/eventService';
 import { useNavigation } from '@react-navigation/native';
 import { firebaseAuth } from '../../../FirebaseConfig';
@@ -9,6 +9,7 @@ const CreateEventScreen = () => {
   const [eventId, setEventId] = useState('');
   const navigation = useNavigation() as any;
   const [events, setEvents] = useState([] as any[]);
+  const [loading, setLoading] = useState(false);
   const user = firebaseAuth.currentUser;
 
   const handleJoinEvent = async () => {
@@ -27,13 +28,13 @@ const CreateEventScreen = () => {
       return;
     }
     try {
-      console.log('Creating event...');
       const id = await createEvent(eventName);
       if (id) {
         setEventId(id);
         alert('Event Created!');
         navigation.navigate('AvailabilityScreen', { eventId: id });
         setEventName('');
+        setEventId('');
       }
     } catch (error) {
       alert('Failed to create event: ' + error);
@@ -45,10 +46,12 @@ const CreateEventScreen = () => {
       console.log('User not logged in');
       return;
     };
+    setLoading(true);
     const unsubscribe = getUserEvents(user.uid, (userEvents) => {
       setEvents(userEvents);
     });
 
+    setLoading(false);
     return unsubscribe;
   }, [user]);
 
@@ -65,23 +68,27 @@ const CreateEventScreen = () => {
     <View style={styles.container}>
       <TextInput
         style={styles.input}
-        placeholder="Event Name"
+        placeholder="Jio Group Name"
         value={eventName}
         onChangeText={setEventName}
       />
       <Pressable style={[styles.eventButton, { marginBottom: 10 }]} onPress={handleCreateEvent}>
-        <Text style={{ color: 'white' }}>Create a New Jio</Text>
+        <Text style={{ color: 'white' }}>Create a New Jio Group</Text>
       </Pressable>
       <TextInput
         style={styles.input}
-        placeholder="Event ID"
+        placeholder="Jio Group ID"
         value={eventId}
         onChangeText={setEventId}
       />
       <Pressable style={styles.eventButton} onPress={handleJoinEvent}>
-        <Text style={{ color: 'white' }}>Join a Jio</Text>
+        <Text style={{ color: 'white' }}>Join a Jio Group</Text>
       </Pressable>
-      <Text style={styles.heading}>Your Jios</Text>
+      <Text style={styles.heading}>Your Jio Groups</Text>
+      {loading ? (
+          <ActivityIndicator size='large' color='#0000ff' />
+        ) : (
+          <>
       {events.length === 0 ? (
         <Text>No jios yet... jio someone now!</Text>
       ) : (
@@ -90,6 +97,8 @@ const CreateEventScreen = () => {
           keyExtractor={(item) => item.id}
           renderItem={goToEvent}
         />
+      )}
+      </>
       )}
     </View>
   );

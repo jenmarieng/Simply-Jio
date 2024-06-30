@@ -2,6 +2,7 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import mainSchedulingScreen from './displayJios';
 import AvailabilityScreen from './scheduleAvail';
+
 type RootStackParamList = {
   mainSchedulingScreen: undefined;
   AvailabilityScreen: { eventId: string };
