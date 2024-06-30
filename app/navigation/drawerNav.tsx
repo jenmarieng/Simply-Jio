@@ -6,6 +6,7 @@ import settings from "../MyTabs/settings";
 import { firebaseAuth } from "../../FirebaseConfig";
 import { signOut } from "firebase/auth";
 import { Image, StyleSheet, View, Text } from 'react-native';
+import { getUsername } from "../../components/userService";
 
 const handleSignOut = async () => {
   try {
@@ -24,31 +25,37 @@ type User = {
   email: string | null;
 };
 
-const UserDetails = ({ user }: { user: User }) => {
-  return (
-    <View style={styles.userInfoWrapper}>
-      <View style={styles.userDetailsWrapper}>
-        <Text style={styles.text}>Logged in as</Text>
-        <Text>{user.displayName}</Text>
-        <Text>{user.email}</Text>
-      </View>
-    </View>
-  );
-};
-
 function CustomDrawerContent(props: any) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [username, setUsername] = useState<string>('');
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
       const user = firebaseAuth.currentUser;
-      if (user) {
-        setCurrentUser(user);
+      if (!user) {
+        return null;
       }
+        setCurrentUser(user);
+        const usernameData = await getUsername(user.uid);
+        setUsername(usernameData);
     };
 
     fetchCurrentUser();
   }, []);
+
+
+  const UserDetails = ({ user }: { user: User }) => {
+    return (
+      <View style={styles.userInfoWrapper}>
+        <View style={styles.userDetailsWrapper}>
+          <Text style={styles.text}>Logged in as</Text>
+          <Text>Name: {user.displayName}</Text>
+          <Text>Username: {username}</Text>
+          <Text>{user.email}</Text>
+        </View>
+      </View>
+    );
+  };
 
   return (
     <DrawerContentScrollView {...props}>

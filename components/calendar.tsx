@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Alert, Modal, Text, TextInput, Pressable, TouchableOpacity, FlatList } from 'react-native';
+import { StyleSheet, View, Alert, Modal, Text, TextInput, Pressable, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
@@ -26,6 +26,7 @@ interface Events {
 const colorOptions = ['pink', 'salmon', 'peru', 'hotpink', 'orange', 'gold', 'turquoise', 'limegreen'];
 
 const App = () => {
+  const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [eventText, setEventText] = useState('');
@@ -49,6 +50,7 @@ const App = () => {
     if (!user) {
       return;
     }
+    setLoading(true);
     const eventsCollection = query(collection(db, 'users', user.uid, 'JioEvents'));
 
     const unsubscribe = onSnapshot(eventsCollection, (snapshot) => {
@@ -59,7 +61,7 @@ const App = () => {
         if (!loadedEvents[date]) {
           loadedEvents[date] = [];
         };
-        loadedEvents[date].push({ 
+        loadedEvents[date].push({
           JioName: data.JioName,
           location: data.location,
           startTime: data.startTime,
@@ -67,9 +69,9 @@ const App = () => {
           multiDay: data.multiDay,
           id: doc.id,
           color: data.color
-        }); 
+        });
       });
-      setEvents(loadedEvents || {});  
+      setEvents(loadedEvents || {});
     });
     return () => unsubscribe();
   }, [user]);
@@ -81,7 +83,7 @@ const App = () => {
         .reduce((count, date) => count + events[date].length, 0);
       setMonthlyEventCount(eventCount);
     };
-
+    setLoading(false);
     countMonthlyEvents();
   }, [currentMonth, events]);
 
@@ -149,8 +151,8 @@ const App = () => {
   const handleEditEvent = (event: EventDetails, eventId: string) => {
     setEventText(event.JioName);
     setLocation(event.location);
-    setStartTime(new Date(`1970-01-01T${event.startTime}:00`));
-    setEndTime(new Date(`1970-01-01T${event.endTime}:00`));
+    setStartTime(new Date(`2024-01-01T${event.startTime}:00`));
+    setEndTime(new Date(`2024-01-01T${event.endTime}:00`));
     setMultiDay(event.multiDay);
     setIsEditing(true);
     setEditingEventId(eventId);
@@ -205,121 +207,127 @@ const App = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.eventCount}>You have {monthlyEventCount} Jio(s) this month.</Text>
-      <View style={{ backgroundColor: 'white' }}>
-        <Calendar
-          hideExtraDays={true}
-          enableSwipeMonths={true}
-          current={format(new Date(), 'yyyy-MM-dd')}
-          style={{
-            borderRadius: 5,
-            height: 380,
-            width: 350,
-            backgroundColor: 'white',
-          }}
-          theme={{
-            calendarBackground: 'white',
-            dayTextColor: 'black',
-            textDisabledColor: 'black',
-            monthTextColor: 'black'
-          }}
-          onDayPress={handleDayPress}
-          onMonthChange={handleMonthChange}
-          markingType={'multi-dot'}
-          markedDates={markedDates}
-        />
-      </View>
-      {selected &&
-        <View style={styles.eventsContainer}>
-          <Text style={styles.eventsHeader}>Events on {format(selected, 'dd MMMM')}</Text>
-          <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
-            <Icon name="add-circle-outline" size={28} color="black" />
-          </TouchableOpacity>
-          <View style={{ maxHeight: '80%' }}>
-            <FlatList
-              data={events[selected] || []}
-              renderItem={renderEventItem}
-              keyExtractor={(item) => item.id}
-              ListEmptyComponent={<Text style={{ marginLeft: 20, fontSize: 16 }}> No Events </Text>}
-              contentContainerStyle={{ paddingBottom: '5%' }}
+      {loading ? (
+        <ActivityIndicator size='large' color='#0000ff' />
+      ) : (
+        <>
+          <Text style={styles.eventCount}>You have {monthlyEventCount} Jio(s) this month.</Text>
+          <View style={{ backgroundColor: 'white' }}>
+            <Calendar
+              hideExtraDays={true}
+              enableSwipeMonths={true}
+              current={format(new Date(), 'yyyy-MM-dd')}
+              style={{
+                borderRadius: 5,
+                height: 380,
+                width: 350,
+                backgroundColor: 'white',
+              }}
+              theme={{
+                calendarBackground: 'white',
+                dayTextColor: 'black',
+                textDisabledColor: 'black',
+                monthTextColor: 'black'
+              }}
+              onDayPress={handleDayPress}
+              onMonthChange={handleMonthChange}
+              markingType={'multi-dot'}
+              markedDates={markedDates}
             />
           </View>
-        </View>}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalView}>
-          <TouchableOpacity style={{ alignSelf: 'flex-end' }} onPress={handleCloseEvent}>
-            <Icon name="close-outline" size={26} color="black" />
-          </TouchableOpacity>
-          <TextInput
-            style={styles.input}
-            placeholder="Event"
-            value={eventText}
-            onChangeText={setEventText}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Location"
-            value={location}
-            onChangeText={setLocation}
-          />
-          <TouchableOpacity style={styles.timePicker} onPress={() => setShowStartPicker(true)}>
-            <Text>Start Time: {format(startTime, 'hh:mm a')}</Text>
-          </TouchableOpacity>
-          {showStartPicker && (
-            <DateTimePicker
-              value={startTime}
-              mode="time"
-              is24Hour={true}
-              display="default"
-              onChange={(event, date) => {
-                setShowStartPicker(false);
-                if (date) {
-                  setStartTime(date);
-                }
-              }}
-            />
-          )}
-          <TouchableOpacity style={styles.timePicker} onPress={() => setShowEndPicker(true)}>
-            <Text>End Time: {format(endTime, 'hh:mm a')}</Text>
-          </TouchableOpacity>
-          {showEndPicker && (
-            <DateTimePicker
-              value={endTime}
-              mode="time"
-              is24Hour={true}
-              display="default"
-              onChange={(event, date) => {
-                setShowEndPicker(false);
-                if (date) {
-                  setEndTime(date);
-                }
-              }}
-            />
-          )}
-          <View style={styles.colorPicker}>
-            {colorOptions.map((color) => (
-              <TouchableOpacity
-                key={color}
-                style={[styles.colorOption, { backgroundColor: color, borderWidth: selectedColor === color ? 2 : 0 }]}
-                onPress={() => setSelectedColor(color)}
+          {selected &&
+            <View style={styles.eventsContainer}>
+              <Text style={styles.eventsHeader}>Events on {format(selected, 'dd MMMM')}</Text>
+              <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
+                <Icon name="add-circle-outline" size={28} color="black" />
+              </TouchableOpacity>
+              <View style={{ maxHeight: '80%' }}>
+                <FlatList
+                  data={events[selected] || []}
+                  renderItem={renderEventItem}
+                  keyExtractor={(item) => item.id}
+                  ListEmptyComponent={<Text style={{ marginLeft: 20, fontSize: 16 }}> No Events </Text>}
+                  contentContainerStyle={{ paddingBottom: '5%' }}
+                />
+              </View>
+            </View>}
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={modalVisible}
+            onRequestClose={() => setModalVisible(false)}
+          >
+            <View style={styles.modalView}>
+              <TouchableOpacity style={{ alignSelf: 'flex-end' }} onPress={handleCloseEvent}>
+                <Icon name="close-outline" size={26} color="black" />
+              </TouchableOpacity>
+              <TextInput
+                style={styles.input}
+                placeholder="Event"
+                value={eventText}
+                onChangeText={setEventText}
               />
-            ))}
-          </View>
-          {/*
+              <TextInput
+                style={styles.input}
+                placeholder="Location"
+                value={location}
+                onChangeText={setLocation}
+              />
+              <TouchableOpacity style={styles.timePicker} onPress={() => setShowStartPicker(true)}>
+                <Text>Start Time: {format(startTime, 'hh:mm a')}</Text>
+              </TouchableOpacity>
+              {showStartPicker && (
+                <DateTimePicker
+                  value={startTime}
+                  mode="time"
+                  is24Hour={true}
+                  display="default"
+                  onChange={(event, date) => {
+                    setShowStartPicker(false);
+                    if (date) {
+                      setStartTime(date);
+                    }
+                  }}
+                />
+              )}
+              <TouchableOpacity style={styles.timePicker} onPress={() => setShowEndPicker(true)}>
+                <Text>End Time: {format(endTime, 'hh:mm a')}</Text>
+              </TouchableOpacity>
+              {showEndPicker && (
+                <DateTimePicker
+                  value={endTime}
+                  mode="time"
+                  is24Hour={true}
+                  display="default"
+                  onChange={(event, date) => {
+                    setShowEndPicker(false);
+                    if (date) {
+                      setEndTime(date);
+                    }
+                  }}
+                />
+              )}
+              <View style={styles.colorPicker}>
+                {colorOptions.map((color) => (
+                  <TouchableOpacity
+                    key={color}
+                    style={[styles.colorOption, { backgroundColor: color, borderWidth: selectedColor === color ? 2 : 0 }]}
+                    onPress={() => setSelectedColor(color)}
+                  />
+                ))}
+              </View>
+              {/*
           <Button
             title={`Multi-Day Mode: ${multiDayMode ? 'On' : 'Off'}`}
             onPress={() => setMultiDayMode(!multiDayMode)}
           />*/}
-          <Pressable style={styles.addEventButton} onPress={handleSaveEvent}>
-            <Text>{isEditing ? 'Update Event' : 'Add Event'}</Text>
-          </Pressable>
-        </View>
-      </Modal>
+              <Pressable style={styles.addEventButton} onPress={handleSaveEvent}>
+                <Text>{isEditing ? 'Update Event' : 'Add Event'}</Text>
+              </Pressable>
+            </View>
+          </Modal>
+        </>
+      )}
     </View>
   );
 };

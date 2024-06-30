@@ -5,11 +5,12 @@ import { initializeApp } from '@firebase/app';
 import { initializeAuth, getReactNativePersistence } from '@firebase/auth';
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 import { getFirestore } from 'firebase/firestore';
+import { firebase_api_key } from './apiKeys';
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyAPlx1EOT4kjEcebtmH-YbCui3kpFgHOc0",
+  apiKey: firebase_api_key,
   authDomain: "simplyjio.firebaseapp.com",
   databaseURL: "https://simplyjio-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "simplyjio",

@@ -1,5 +1,6 @@
 import { db, firebaseAuth } from '../FirebaseConfig';
 import { collection, addDoc, getDocs, query, doc, getDoc, where, updateDoc, arrayUnion, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { getUsername } from '../components/userService';
 
 export const createEvent = async (name: string) => {
   const user = firebaseAuth.currentUser;
@@ -7,10 +8,11 @@ export const createEvent = async (name: string) => {
     console.log('User not logged in');
     return null;
   }
+  const username = await getUsername(user.uid); 
   const docRef = await addDoc(collection(db, 'events'), {
     name,
-    creator: user.uid,
-    participants: [{ userId: user.uid, userName: user.displayName || 'Anonymous' }],
+    creator: [{ userId: user.uid, displayName: user.displayName || 'Anonymous', email: user.email, username }],
+    participants: [{ userId: user.uid, displayName: user.displayName || 'Anonymous', email: user.email, username }],
   });
   return docRef.id;
 };
@@ -28,10 +30,10 @@ export const joinEvent = async (eventId: string) => {
   }
   const eventData = docSnap.data();
   const existingParticipant = eventData.participants.find((participant: any) => participant.userId === user.uid);
-
+  const username = await getUsername(user.uid); 
   if (!existingParticipant) {
     await updateDoc(eventRef, {
-      participants: arrayUnion({ userId: user.uid, userName: user.displayName || 'Anonymous' }),
+      participants: arrayUnion({ userId: user.uid, displayName: user.displayName || 'Anonymous', email: user.email, username }),
     });
   }
   return docSnap.data();
@@ -104,8 +106,8 @@ export const updateEvent = async (eventId: string, updatedEvent: any) => {
   }
 };
 
-export const saveAvailability = async (eventId: string, availability: { userId: string, userName: string, date: string, timeSlots: string[] }) => {
-  const { userId, userName, date, timeSlots } = availability;
+export const saveAvailability = async (eventId: string, availability: { userId: string, displayName: string, date: string, timeSlots: string[] }) => {
+  const { userId, displayName, date, timeSlots } = availability;
   const availabilityRef = collection(db, 'events', eventId, 'userAvailabilities');
   const q = query(availabilityRef, where('userId', '==', userId), where('date', '==', date));
   const querySnapshot = await getDocs(q);
@@ -117,7 +119,7 @@ export const saveAvailability = async (eventId: string, availability: { userId: 
   } else {
     const docRef = await addDoc(availabilityRef, {
       userId,
-      userName,
+      displayName,
       date,
       timeSlots,
     });
