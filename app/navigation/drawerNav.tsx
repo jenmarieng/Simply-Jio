@@ -3,10 +3,10 @@ import React, { useEffect, useState } from 'react';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItem, DrawerItemList } from '@react-navigation/drawer';
 import index from "../index";
 import settings from "../MyTabs/settings";
-import { firebaseAuth } from "../../FirebaseConfig";
+import { firebaseAuth, db } from "../../FirebaseConfig";
+import { doc, onSnapshot } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { Image, StyleSheet, View, Text } from 'react-native';
-import { getUsername } from "../../components/userService";
 
 const handleSignOut = async () => {
   try {
@@ -29,20 +29,39 @@ function CustomDrawerContent(props: any) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [username, setUsername] = useState<string>('');
 
+  const getUsername = (uid: string, callback: (username: string) => void) => {
+    const userDocRef = doc(db, 'users', uid);
+  
+    return onSnapshot(userDocRef, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const userData = docSnapshot.data();
+        const username = userData.username;
+        callback(username);
+      }
+    });
+  };
+
   useEffect(() => {
     const fetchCurrentUser = async () => {
       const user = firebaseAuth.currentUser;
       if (!user) {
-        return null;
+        return;
       }
-        setCurrentUser(user);
-        const usernameData = await getUsername(user.uid);
-        setUsername(usernameData);
+      setCurrentUser(user);
+
+      const unsubscribe = getUsername(user.uid, setUsername);
+
+      return unsubscribe;
     };
 
-    fetchCurrentUser();
-  }, []);
+    const unsubscribe = fetchCurrentUser();
 
+    return () => {
+      if (unsubscribe) {
+        unsubscribe;
+      }
+    };
+  }, []);
 
   const UserDetails = ({ user }: { user: User }) => {
     return (

@@ -8,11 +8,11 @@ export const createEvent = async (name: string) => {
     console.log('User not logged in');
     return null;
   }
-  const username = await getUsername(user.uid); 
+  //const username = await getUsername(user.uid); 
   const docRef = await addDoc(collection(db, 'events'), {
     name,
-    creator: [{ userId: user.uid, displayName: user.displayName || 'Anonymous', email: user.email, username }],
-    participants: [{ userId: user.uid, displayName: user.displayName || 'Anonymous', email: user.email, username }],
+    creator: [{ userId: user.uid, displayName: user.displayName || 'Anonymous', email: user.email }],
+    participants: [{ userId: user.uid, displayName: user.displayName || 'Anonymous', email: user.email }],
   });
   return docRef.id;
 };
@@ -30,10 +30,10 @@ export const joinEvent = async (eventId: string) => {
   }
   const eventData = docSnap.data();
   const existingParticipant = eventData.participants.find((participant: any) => participant.userId === user.uid);
-  const username = await getUsername(user.uid); 
+  //const username = await getUsername(user.uid); 
   if (!existingParticipant) {
     await updateDoc(eventRef, {
-      participants: arrayUnion({ userId: user.uid, displayName: user.displayName || 'Anonymous', email: user.email, username }),
+      participants: arrayUnion({ userId: user.uid, displayName: user.displayName || 'Anonymous', email: user.email }),
     });
   }
   return docSnap.data();

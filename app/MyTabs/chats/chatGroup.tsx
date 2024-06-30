@@ -73,6 +73,11 @@ const ChatPage = () => {
     setParticipantUsername('');
   };
 
+  const addUser = () => {
+    addUserToChat(id, participantUsername),
+    handleCloseEvent();
+  };
+
   return (
       <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={200}>
         <Modal
@@ -91,7 +96,7 @@ const ChatPage = () => {
             value={participantUsername}
             onChangeText={setParticipantUsername}
           />
-          <Pressable style={styles.addParticipantButton} onPress={() => { addUserToChat(id, participantUsername), handleCloseEvent }}>
+          <Pressable style={styles.addParticipantButton} onPress={addUser}>
             <Text style={{ color: 'white' }}>Add Participant</Text>
           </Pressable>
         </View>

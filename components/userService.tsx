@@ -1,6 +1,6 @@
 import { firebaseAuth, db } from '../FirebaseConfig';
 import { updateProfile, updateEmail, updatePassword } from 'firebase/auth';
-import { doc, updateDoc, query, where, collection, getDocs, setDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, query, where, collection, getDocs, setDoc, getDoc, addDoc } from 'firebase/firestore';
 
 /* not working yet
 const updateUserDisplayName = async (userId: string, newDisplayName: string) => {
@@ -123,6 +123,15 @@ const updateUserEmail = async (userId: string, newEmail: string) => {
 };
 */
 
+export const getUsername = async (userId: string) => {
+    const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+
+    if (userDoc.exists()) {
+        return userDoc.data().username;
+    }
+};
+
 export const handleUpdateDisplayName = async (displayName: string) => {
     const user = firebaseAuth.currentUser;
 
@@ -141,9 +150,18 @@ export const handleUpdateDisplayName = async (displayName: string) => {
             displayName,
         });
         const userRef = doc(db, 'users', user.uid);
-        await updateDoc(userRef, {
-            displayName,
-        });
+        const userDoc = await getDoc(userRef);
+
+        if (!userDoc.exists()) {
+            await setDoc(userRef, {
+                displayName: user.displayName,
+                email: user.email,
+            });
+        } else {
+            await updateDoc(userRef, {
+                displayName,
+            });
+        };
         //updateUserDisplayName(user.uid, displayName);
         await user.reload();
         alert('Display name updated successfully');
@@ -160,8 +178,13 @@ export const handleUpdateUsername = async (username: string) => {
         return null;
     }
 
+    const currentUsername = await getUsername(user.uid);
+
     if (!username) {
         alert('Username cannot be empty');
+        return;
+    } else if (username == currentUsername) {
+        alert('Username is already set to ' + username);
         return;
     } else try {
         const usersCollection = collection(db, 'users');
@@ -243,17 +266,5 @@ export const handleUpdatePassword = async (newPassword: string) => {
     } catch (error) {
         alert('Error updating password!');
         console.error('Error updating password:', error);
-    }
-};
-
-export const getUsername = async (userId: string) => {
-    const userRef = doc(db, 'users', userId);
-    const userDoc = await getDoc(userRef);
-
-    if (userDoc.exists()) {
-        return userDoc.data().username;
-    } else {
-        console.error('No such user!');
-        return null;
     }
 };
