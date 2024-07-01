@@ -20,7 +20,7 @@ const FoodJio = () => {
     Restaurant: ['restaurant'],
     Cafe: ['cafe'],
     Bar: ['bar'],
-    Others: ['convenience_store', 'meal_takeaway', 'meal_delivery'],
+    Others: ['convenience_store'],
   };
 
   const fetchPlaces = async (nextPageToken: string | null = null) => {
