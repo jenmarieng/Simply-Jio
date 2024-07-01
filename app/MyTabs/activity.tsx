@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import axios from 'axios';
 import { googlePlaces_api_key } from '../../apiKeys';
 
@@ -17,13 +17,13 @@ const ActivityJio = () => {
   };
 
   const placesTypes: PlacesTypes = {
-    Shopping: ['clothing_store', 'shoe-store', 'department_store', 'electronics_store', 'shopping_mall', 'furniture-store', 'jewelry_store'],
-    Entertainment: ['movie_theatre', 'bowling_alley'],
-    Attractions: ['amusement-park', 'tourist_attraction', 'zoo', 'museum', 'aquarium'],
-    Chill: ['book_store', 'library', 'painter', 'park', 'museum', 'art_gallery'],
+    Shopping: ['store', 'clothing_store', 'shoe-store', 'department_store', 'electronics_store', 'shopping_mall', 'furniture-store', 'jewelry_store'],
+    Movie: ['movie_theater'],
+    Bowling: ['bowling_alley'],
+    Attractions: ['tourist_attraction', 'amusement-park', 'zoo', 'museum', 'aquarium', 'art-gallery'],
+    Chill: ['museum', 'art_gallery'],
     Beauty: ['spa', 'beauty_salon', 'hair_care'],
-    Sport: ['gym', 'stadium', 'park'],
-    Others: ['pet-store', 'supermarket', 'night_club'],
+    Others: ['park'],
   };
 
   const fetchPlaces = async (nextPageToken: string | null = null) => {
@@ -72,23 +72,25 @@ const ActivityJio = () => {
     <View style={styles.container}>
       <Text style={styles.heading}>Select filters or start searching for ActivityJios!</Text>
       <View style={styles.filterContainer}>
-        {Object.keys(placesTypes).map((category) => (
-          <TouchableOpacity
-            key={category}
-            style={[
-              styles.filterButton,
-              selectedCategories.includes(category) && styles.filterButtonSelected
-            ]}
-            onPress={() => setSelectedCategories((prev) => {
-              if (prev.includes(category)) {
-                return prev.filter((c) => c !== category);
-              } else {
-                return [...prev, category];
-              }
-            })}>
-            <Text style={styles.filterButtonText}>{category}</Text>
-          </TouchableOpacity>
-        ))}
+        <ScrollView horizontal>
+          {Object.keys(placesTypes).map((category) => (
+            <TouchableOpacity
+              key={category}
+              style={[
+                styles.filterButton,
+                selectedCategories.includes(category) && styles.filterButtonSelected
+              ]}
+              onPress={() => setSelectedCategories((prev) => {
+                if (prev.includes(category)) {
+                  return prev.filter((c) => c !== category);
+                } else {
+                  return [...prev, category];
+                }
+              })}>
+              <Text style={styles.filterButtonText}>{category}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
       <TextInput
         style={styles.input}
