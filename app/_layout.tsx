@@ -2,9 +2,11 @@ import React, { useEffect, useState } from "react";
 import { User, onAuthStateChanged } from "@firebase/auth";
 import { firebaseAuth } from "../FirebaseConfig";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import loginpage from "./authScreens/loginpage";
+import loginPage from "./authScreens/loginPage";
+import signupPage from "./authScreens/signupPage";
 import drawerNav from "./navigation/drawerNav";
-import signuppage from "./authScreens/signuppage";
+import forgotPasswordPage from "./authScreens/forgotPasswordPage";
+import forgotUsernamePage from "./authScreens/forgotUsernamePage";
 
 const Stack = createNativeStackNavigator();
 
@@ -24,12 +26,14 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <Stack.Navigator initialRouteName="authScreens/loginpage">
+    <Stack.Navigator initialRouteName="authScreens/loginPage">
       {user ? <Stack.Screen name="navigation/drawerNav" component={drawerNav} options={{ headerShown: false }} />
         :
         <>
-        <Stack.Screen name="authScreens/loginpage" component={loginpage} options={{ headerShown: false }} />
-        <Stack.Screen name="authScreens/signuppage" component={signuppage} options={{ headerShown: false }} />
+        <Stack.Screen name="authScreens/loginPage" component={loginPage} options={{ headerShown: false }} />
+        <Stack.Screen name="authScreens/signupPage" component={signupPage} options={{ headerShown: false }} />
+        <Stack.Screen name="authScreens/forgotPasswordPage" component={forgotPasswordPage} options={{ headerShown: false }} />
+        <Stack.Screen name="authScreens/forgotUsernamePage" component={forgotUsernamePage} options={{ headerShown: false }} />
         </>
       }
     </Stack.Navigator>
