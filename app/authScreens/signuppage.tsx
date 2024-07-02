@@ -2,25 +2,49 @@ import { View, Text, ImageBackground, TextInput, StyleSheet, Pressable, Activity
 import React, { useState } from 'react'
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { firebaseAuth } from '../../FirebaseConfig';
-import loginpage from './loginpage';
 import { useNavigation } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/Ionicons';
+import { saveNewUser, checkIfUsernameExists } from '../../components/userService';
 
 const SignUp = () => {
+    const [displayName, setDisplayName] = useState('');
+    const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const auth = firebaseAuth;
+
+    const checkPassword = () => {
+        if (password === confirmPassword) {
+            setLoading(true);
+            return true;
+        } else {
+            alert('Passwords do not match!');
+            return false;
+        }
+    };
+
     const createUser = async () => {
-        setLoading(true);
-        try {
-            const response = await createUserWithEmailAndPassword(auth, email, password);
-            console.log(response);
-            alert('Account has been created! You will be logged in.');
-        } catch (error: any) {
-            console.log(error);
-            alert('Sign-up failed: ' + error.message);
-        } finally {
-            setLoading(false);
+        if (!username || !displayName || !email || !password || !confirmPassword) {
+            alert('Please do not leave any fields empty!');
+            return;
+        }
+        if (await checkIfUsernameExists(username)) {
+            alert('Username already exists!');
+            return;
+        }
+        if (checkPassword()) {
+            try {
+                const response = await createUserWithEmailAndPassword(firebaseAuth, email, confirmPassword);
+                saveNewUser(username, displayName);
+                console.log(response);
+                alert('Account has been created! You will be logged in.');
+            } catch (error: any) {
+                console.log(error);
+                alert('Sign-up failed: ' + error.message);
+            } finally {
+                setLoading(false);
+            }
         }
     };
 
@@ -29,18 +53,20 @@ const SignUp = () => {
     return (
         <View style={styles.container}>
             <ImageBackground source={require('../../assets/images/startupImage.png')} resizeMode="cover" style={styles.image}>
-                <Text style={styles.text}>Register for an account now!</Text>
-                <TextInput value={email} style={styles.input} placeholder="Enter your email" onChangeText={(text) => setEmail(text)} autoCapitalize='none' />
-                <TextInput secureTextEntry={true} value={password} style={styles.input} placeholder="Enter your password" onChangeText={(text) => setPassword(text)} autoCapitalize='none' />
+                <Pressable style={styles.backButton} onPress={() => navigation.replace('authScreens/loginPage')}>
+                    <Icon name="arrow-back" size={28} color="grey" />
+                </Pressable>
+                <TextInput value={displayName} style={styles.input} placeholder="Display Name" onChangeText={(text) => setDisplayName(text)} />
+                <TextInput value={username} style={styles.input} placeholder="Username" onChangeText={(text) => setUsername(text)} autoCapitalize='none' />
+                <TextInput value={email} style={styles.input} placeholder="Email" onChangeText={(text) => setEmail(text)} autoCapitalize='none' />
+                <TextInput secureTextEntry={true} value={password} style={styles.input} placeholder="Password" onChangeText={(text) => setPassword(text)} autoCapitalize='none' />
+                <TextInput secureTextEntry={true} value={confirmPassword} style={styles.input} placeholder="Confirm password" onChangeText={(text) => setConfirmPassword(text)} autoCapitalize='none' />
                 {loading ? (
                     <ActivityIndicator size='large' color='#0000ff' />
                 ) : (
                     <>
                         <Pressable style={styles.signupButton} onPress={createUser}>
                             <Text>CREATE ACCOUNT</Text>
-                        </Pressable>
-                        <Pressable style={styles.backButton} onPress={() => navigation.navigate('authScreens/loginpage')}>
-                            <Text>Back to Login Page</Text>
                         </Pressable>
                     </>
                 )}
@@ -62,10 +88,11 @@ const styles = StyleSheet.create({
     input: {
         backgroundColor: '#ffd0a5',
         borderRadius: 15,
-        padding: 15,
-        marginBottom: 15,
+        padding: 12,
+        marginBottom: 13,
         width: '60%',
         alignSelf: 'center',
+        fontSize: 14,
     },
     signupButton: {
         alignItems: 'center',
@@ -77,20 +104,8 @@ const styles = StyleSheet.create({
         backgroundColor: "limegreen",
     },
     backButton: {
-        alignItems: 'center',
-        alignSelf: 'center',
-        paddingVertical: 10,
-        paddingHorizontal: 10,
-        marginTop: 50,
-        elevation: 4,
-        borderRadius: 4,
-        backgroundColor: "lightgrey",
+        paddingStart: 15,
+        paddingTop: '18%',
+        paddingBottom: '17%',
     },
-    text: {
-        marginTop: '40%',
-        marginBottom: '7%',
-        alignSelf: 'center',
-        textAlign: 'center',
-        fontSize: 25,
-    }
 });

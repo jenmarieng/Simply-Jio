@@ -3,17 +3,18 @@ import React, { useState } from 'react'
 import { firebaseAuth } from '../../FirebaseConfig';
 import { signInWithEmailAndPassword, sendPasswordResetEmail, fetchSignInMethodsForEmail } from '@firebase/auth';
 import { useNavigation } from '@react-navigation/native';
+import { getEmailFromUsername } from '../../components/userService';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const auth = firebaseAuth;
 
-  const signIn = async () => {
+  const signInWithUsername = async () => {
     setLoading(true);
     try {
-      const response = await signInWithEmailAndPassword(auth, email, password);
+      const userEmail = await getEmailFromUsername(username);
+      const response = await signInWithEmailAndPassword(firebaseAuth, userEmail, password);
       console.log(response);
     } catch (error: any) {
       console.log(error);
@@ -23,10 +24,11 @@ const Login = () => {
     }
   };
 
+  /*
   const forgotPassword = async () => {
     try {
       let signInMethods = await fetchSignInMethodsForEmail(firebaseAuth, email);
-      if (signInMethods.length > 0) {      
+      if (signInMethods.length > 0) {
         await sendPasswordResetEmail(auth, email);
         alert('Password reset email sent!');
       } else {
@@ -36,27 +38,30 @@ const Login = () => {
       console.log(error);
       alert('Error resetting password: ' + error.message + 'Please try again.');
     }
-  };
+  };*/
 
   const navigation = useNavigation() as any;
 
   return (
     <View style={styles.container}>
       <ImageBackground source={require('../../assets/images/startupImage.png')} resizeMode="cover" style={styles.image}>
-        <TextInput value={email} style={[styles.input, { marginTop: '40%' }]} placeholder="Enter your email" onChangeText={(text) => setEmail(text)} autoCapitalize='none' />
-        <TextInput secureTextEntry={true} value={password} style={styles.input} placeholder="Enter your password" onChangeText={(text) => setPassword(text)} autoCapitalize='none' />
+        <TextInput value={username} style={[styles.input, { marginTop: '40%' }]} placeholder="Username" onChangeText={(text) => setUsername(text)} autoCapitalize='none' />
+        <Pressable style={styles.forgotPasswordButton} onPress={() => navigation.navigate('authScreens/forgotUsernamePage')}>
+          <Text style={{ textDecorationLine: 'underline', color: 'red' }}>Forgot username?</Text>
+        </Pressable>
+        <TextInput secureTextEntry={true} value={password} style={styles.input} placeholder="Password" onChangeText={(text) => setPassword(text)} autoCapitalize='none' />
         {loading ? (
           <ActivityIndicator size='large' color='#0000ff' />
         ) : (
           <>
-            <Pressable style={styles.forgotPasswordButton} onPress={forgotPassword}>
-              <Text style={{ textDecorationLine: 'underline', color: 'red' }}>Reset password</Text>
+            <Pressable style={styles.forgotPasswordButton} onPress={() => navigation.navigate('authScreens/forgotPasswordPage')}>
+              <Text style={{ textDecorationLine: 'underline', color: 'red' }}>Forgot password?</Text>
             </Pressable>
-            <Pressable style={styles.loginButton} onPress={signIn}>
+            <Pressable style={styles.loginButton} onPress={signInWithUsername}>
               <Text>LOGIN</Text>
             </Pressable>
             <Text style={styles.text}>Don't have an account yet?</Text>
-            <Pressable style={styles.signupButton} onPress={() => navigation.navigate('authScreens/signuppage')}>
+            <Pressable style={styles.signupButton} onPress={() => navigation.navigate('authScreens/signupPage')}>
               <Text>SIGNUP</Text>
             </Pressable>
           </>
@@ -79,10 +84,10 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: '#ffd0a5',
     borderRadius: 15,
-    padding: 15,
-    marginBottom: 15,
+    padding: 12,
     width: '60%',
     alignSelf: 'center',
+    fontSize: 14,
   },
   loginButton: {
     alignItems: 'center',
@@ -106,7 +111,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'center',
     paddingLeft: '35%',
-    marginBottom: 15,
+    marginBottom: 5,
     borderRadius: 4,
   },
   text: {

@@ -132,6 +132,46 @@ export const getUsername = async (userId: string) => {
     }
 };
 
+export const checkIfUsernameExists = async (username: string) => {
+    const usersCollection = collection(db, 'users');
+    const q = query(usersCollection, where('username', '==', username));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+        alert('Username already exists!');
+        return true;
+    } else {
+        return false;
+    }
+};
+
+export const saveNewUser = async (username: string, displayName: string) => {
+    const user = firebaseAuth.currentUser;
+    if (!user) {
+        return null;
+    }
+    await updateProfile(user, {
+        displayName,
+    });
+    const userRef = doc(db, 'users', user.uid);
+    await setDoc(userRef, {
+        username: username,
+        email: user.email,
+        displayName,
+    })
+};
+
+export const getEmailFromUsername = async (username: string) => {
+    const usersCollection = collection(db, 'users');
+    const q = query(usersCollection, where('username', '==', username));
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
+        return null;
+    } else {   
+        return querySnapshot.docs[0].data().email;
+    }
+}
+
 export const handleUpdateDisplayName = async (displayName: string) => {
     const user = firebaseAuth.currentUser;
 
@@ -187,6 +227,7 @@ export const handleUpdateUsername = async (username: string) => {
         alert('Username is already set to ' + username);
         return;
     } else try {
+        /*
         const usersCollection = collection(db, 'users');
         const q = query(usersCollection, where('username', '==', username));
         const querySnapshot = await getDocs(q);
@@ -194,8 +235,8 @@ export const handleUpdateUsername = async (username: string) => {
         if (!querySnapshot.empty) {
             alert('Username already exists!');
             return null;
-        }
-
+        }*/
+        checkIfUsernameExists(username);
         const userRef = doc(db, 'users', user.uid);
         const userDoc = await getDoc(userRef);
 
