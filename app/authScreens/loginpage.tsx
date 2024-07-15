@@ -18,27 +18,15 @@ const Login = () => {
       console.log(response);
     } catch (error: any) {
       console.log(error);
-      alert('Login failed: ' + error.message);
+      if (error.code === 'auth/missing-email') {
+        alert('Please enter a valid username.');
+      } else {
+        alert('Login failed: ' + error.message);
+      }
     } finally {
       setLoading(false);
     }
   };
-
-  /*
-  const forgotPassword = async () => {
-    try {
-      let signInMethods = await fetchSignInMethodsForEmail(firebaseAuth, email);
-      if (signInMethods.length > 0) {
-        await sendPasswordResetEmail(auth, email);
-        alert('Password reset email sent!');
-      } else {
-        alert('No account found with that email!');
-      }
-    } catch (error: any) {
-      console.log(error);
-      alert('Error resetting password: ' + error.message + 'Please try again.');
-    }
-  };*/
 
   const navigation = useNavigation() as any;
 

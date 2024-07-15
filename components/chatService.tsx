@@ -90,7 +90,7 @@ export const addUserToChat = async (groupId: string, participantUsername: string
         const existingParticipant = chatData.participants.find((participant: any) => participant.userId === participantId);
         if (!existingParticipant) {
             await updateDoc(chatRef, {
-                participants: arrayUnion({ userId: participantId, name: participantData.displayName || 'Anonymous', email: participantData.email }),
+                participants: arrayUnion({ userId: participantId, displayName: participantData.displayName || 'Anonymous', email: participantData.email }),
             });
             alert('User added to chat!');
         } else {
@@ -104,19 +104,51 @@ export const addUserToChat = async (groupId: string, participantUsername: string
     }
 };
 
+export const getChatId = async (eventId: string) => {
+    const groupsRef = collection(db, 'groups');
+    const q = query(groupsRef, where('JioGroupId', '==', eventId));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+        return querySnapshot.docs[0].id;
+    } else {
+        return null;
+    };
+};
+
+export const addUserIfNotInChat = async (chatId: string) => {
+    const user = firebaseAuth.currentUser;
+    if (!user) {
+        return null;
+    }
+
+    const groupsRef = collection(db, 'groups', chatId, 'participants');
+    const q = query(groupsRef, where('userId', '==', user.uid));
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
+        try {
+            await updateDoc(doc(db, 'groups', chatId), {
+                participants: arrayUnion({ userId: user.uid, name: user.displayName || 'Anonymous', email: user.email }),
+            });
+        } catch (error) {
+            console.log('Error adding user to chat:', error);
+        }
+    };
+};
+
 export const startGroupFromJio = async (groupName: string, eventId: string) => {
     //obtain participants data from event
     const eventRef = doc(db, 'events', eventId);
     const eventSnap = await getDoc(eventRef);
-    
+
     if (!eventSnap.exists()) {
-      console.log('Event does not exist');
-      return null;
+        console.log('Event does not exist');
+        return null;
     }
-  
+
     const eventData = eventSnap.data();
     const participants = eventData.participants || [];
-  
+
     //startGroup
     const user = firebaseAuth.currentUser;
     if (!user) {
@@ -152,7 +184,8 @@ export const startGroupFromJio = async (groupName: string, eventId: string) => {
         } catch (error) {
             console.log('error creating group', error);
         }
-        return groupRef.id;
+        const chatId = await getChatId(eventId);
+        return chatId;
     } else {
         console.log('groupsCollectionRef is null');
     }

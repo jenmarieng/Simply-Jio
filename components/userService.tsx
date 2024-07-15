@@ -167,7 +167,7 @@ export const getEmailFromUsername = async (username: string) => {
     const querySnapshot = await getDocs(q);
     if (querySnapshot.empty) {
         return null;
-    } else {   
+    } else {
         return querySnapshot.docs[0].data().email;
     }
 }
@@ -307,5 +307,46 @@ export const handleUpdatePassword = async (newPassword: string) => {
     } catch (error) {
         alert('Error updating password!');
         console.error('Error updating password:', error);
+    }
+};
+
+export const saveBirthday = async (birthday: Date) => {
+    const user = firebaseAuth.currentUser;
+
+    if (!user) {
+        return null;
+    }
+
+    const userRef = doc(db, 'users', user.uid);
+    try {
+        await updateDoc(userRef, {
+            birthday,
+        });
+        alert('Birthday updated successfully');
+    } catch (error) {
+        alert('Error updating birthday!');
+        console.error('Error updating birthday:', error);
+    }
+};
+
+export const getBirthday = async () => {
+    const user = firebaseAuth.currentUser;
+
+    if (!user) {
+        return null;
+    }
+
+    const q = doc(db, 'users', user.uid);
+    try {
+        const userDoc = await getDoc(q);
+        if (userDoc.exists()) {
+            if (!userDoc.data().birthday) {
+                return null;
+            }
+            console.log('Birthday:', userDoc.data().birthday.toDate());
+            return userDoc.data().birthday.toDate();
+        }
+    } catch (error) {
+        console.error('Error retrieving birthday:', error);
     }
 };
