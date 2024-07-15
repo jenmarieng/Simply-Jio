@@ -19,6 +19,7 @@ const CreateEventScreen = () => {
         return;
       }
       await joinEvent(eventId);
+      alert('Joined Event!');
       navigation.navigate('AvailabilityScreen', { eventId });
       setEventId('');
     } catch (error) {

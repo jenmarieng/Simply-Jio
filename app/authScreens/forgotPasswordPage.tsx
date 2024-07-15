@@ -1,7 +1,8 @@
 import { View, Text, StyleSheet, Pressable, ImageBackground, TextInput } from 'react-native'
 import React, { useState } from 'react'
-import { sendPasswordResetEmail, fetchSignInMethodsForEmail } from '@firebase/auth';
-import { firebaseAuth } from '../../FirebaseConfig';
+import { sendPasswordResetEmail } from '@firebase/auth';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { firebaseAuth, db } from '../../FirebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
@@ -10,10 +11,13 @@ const ForgotPasswordScreen = () => {
     const [email, setEmail] = useState('');
     const forgotPassword = async () => {
         try {
-            let signInMethods = await fetchSignInMethodsForEmail(firebaseAuth, email);
-            if (signInMethods.length > 0) {
+            const usersCollection = collection(db, 'users');
+            const q = query(usersCollection, where('email', '==', email));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
                 await sendPasswordResetEmail(firebaseAuth, email);
-                alert('Password reset email sent!');
+                alert('Password reset email sent to ' + email + '!');
             } else {
                 alert('No account found with that email!');
             }
