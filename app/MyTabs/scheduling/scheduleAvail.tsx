@@ -11,7 +11,7 @@ import * as Clipboard from 'expo-clipboard';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Icon2 from 'react-native-vector-icons/Ionicons';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { startGroupFromJio, checkIsChatCreated } from '../../../components/chatService';
+import { startGroupFromJio, checkIsChatCreated, getChatId } from '../../../components/chatService';
 
 type RootStackParamList = {
   ScheduleAvailability: { eventId: string };
@@ -106,7 +106,7 @@ const ScheduleAvailabilityScreen = () => {
     };
     fetchUserAvailability();
   }, [eventId, user]);
-  
+
   const handleSaveAvailability = async () => {
     if (user) {
       for (const [date, timeSlots] of Object.entries(selectedTimeSlots)) {
@@ -163,7 +163,7 @@ const ScheduleAvailabilityScreen = () => {
     setSelectedDate(date);
     setSelectedTime(timeSlot);
   };
-  
+
   const renderGroupAvailabilityRow = (time: string) => {
     return (
       <View key={time} style={styles.tableRow}>
@@ -188,7 +188,7 @@ const ScheduleAvailabilityScreen = () => {
       </View>
     );
   };
-  
+
   const copyToClipboard = async () => {
     await Clipboard.setStringAsync(eventId);
     alert('Copied to clipboard!');
@@ -276,18 +276,39 @@ const ScheduleAvailabilityScreen = () => {
         setSelectedJioEndTime(time);
       }
     };
-
+    /*
     useEffect(() => {
       checkIsChatCreated(eventId).then((result) => {
         setCreatedChat(result);
+
+        if (result) {
+          setChatId(getChatId(eventId));
+        }
       })
-    })
+    })*/
+    useEffect(() => {
+      checkIsChatCreated(eventId).then((result) => {
+        setCreatedChat(result);
+
+        if (result) {
+          getChatId(eventId).then((chatId) => {
+            if (chatId) {
+              setChatId(chatId);
+            } else {
+              console.log('Chat ID not found');
+              setChatId('');
+            }
+          });
+        }
+      });
+    }, [eventId]);
 
     const createGroupChat = async () => {
       const chatGroupId = await startGroupFromJio(eventName, eventId);
       if (chatGroupId) {
         setChatId(chatGroupId);
       }
+      setCreatedChat(true);
     };
 
     return (
@@ -337,82 +358,84 @@ const ScheduleAvailabilityScreen = () => {
             visible={isModalVisible}
             onRequestClose={() => setIsModalVisible(false)}
           >
-            <View style={styles.modalContent}>
-              <TouchableOpacity style={{ alignSelf: 'flex-end' }} onPress={() => {
-                setIsModalVisible(false);
-                setSelectedJioName('');
-                setSelectedJioDate(new Date());
-                setSelectedJioStartTime(new Date());
-                setSelectedJioEndTime(new Date());
-              }}>
-                <Icon name="close-outline" size={26} color="grey" />
-              </TouchableOpacity>
-              <TextInput
-                style={styles.input}
-                placeholder="Confirmed Jio Name"
-                value={selectedJioName}
-                onChangeText={setSelectedJioName}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Location"
-                value={selectedJioLocation}
-                onChangeText={setSelectedJioLocation}
-              />
-              <View style={styles.dateTimePickerContainer}>
-                <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowJioDatePicker(true)}>
-                  <Text>{`Jio Date: ${format(selectedJioDate, 'dd-MM-yyyy')}`}</Text>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <TouchableOpacity style={{ alignSelf: 'flex-end' }} onPress={() => {
+                  setIsModalVisible(false);
+                  setSelectedJioName('');
+                  setSelectedJioDate(new Date());
+                  setSelectedJioStartTime(new Date());
+                  setSelectedJioEndTime(new Date());
+                }}>
+                  <Icon name="close-outline" size={26} color="grey" />
                 </TouchableOpacity>
-                {showJioDatePicker && (
-                  <DateTimePicker
-                    value={selectedJioDate}
-                    mode="date"
-                    display="default"
-                    onChange={(event, date) => {
-                      setShowJioDatePicker(false);
-                      handleDateChange(event, date);
-                    }}
-                  />
-                )}
-              </View>
-              <View style={styles.dateTimePickerContainer}>
-                <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowStartPicker(true)}>
-                  <Text>{`Jio Start Time: ${format(selectedJioStartTime, 'HH:mm')}`}</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Confirmed Jio Name"
+                  value={selectedJioName}
+                  onChangeText={setSelectedJioName}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Location"
+                  value={selectedJioLocation}
+                  onChangeText={setSelectedJioLocation}
+                />
+                <View style={styles.dateTimePickerContainer}>
+                  <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowJioDatePicker(true)}>
+                    <Text>{`Jio Date: ${format(selectedJioDate, 'dd-MM-yyyy')}`}</Text>
+                  </TouchableOpacity>
+                  {showJioDatePicker && (
+                    <DateTimePicker
+                      value={selectedJioDate}
+                      mode="date"
+                      display="default"
+                      onChange={(event, date) => {
+                        setShowJioDatePicker(false);
+                        handleDateChange(event, date);
+                      }}
+                    />
+                  )}
+                </View>
+                <View style={styles.dateTimePickerContainer}>
+                  <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowStartPicker(true)}>
+                    <Text>{`Jio Start Time: ${format(selectedJioStartTime, 'HH:mm')}`}</Text>
+                  </TouchableOpacity>
+                  {showStartPicker && (
+                    <DateTimePicker
+                      value={selectedJioStartTime}
+                      mode="time"
+                      display="default"
+                      onChange={(event, time) => {
+                        setShowStartPicker(false);
+                        handleStartTimeChange(event, time);
+                      }}
+                    />
+                  )}
+                </View>
+                <View style={styles.dateTimePickerContainer}>
+                  <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowEndPicker(true)}>
+                    <Text>{`Jio End Time: ${format(selectedJioEndTime, 'HH:mm')}`}</Text>
+                  </TouchableOpacity>
+                  {showEndPicker && (
+                    <DateTimePicker
+                      value={selectedJioEndTime}
+                      mode="time"
+                      display="default"
+                      onChange={(event, time) => {
+                        setShowEndPicker(false);
+                        handleEndTimeChange(event, time);
+                      }}
+                    />
+                  )}
+                </View>
+                <TouchableOpacity
+                  onPress={saveEventSlot}
+                  style={{ backgroundColor: 'powderblue', alignSelf: 'center', padding: 10 }}
+                >
+                  <Text>Save Event</Text>
                 </TouchableOpacity>
-                {showStartPicker && (
-                  <DateTimePicker
-                    value={selectedJioStartTime}
-                    mode="time"
-                    display="default"
-                    onChange={(event, time) => {
-                      setShowStartPicker(false);
-                      handleStartTimeChange(event, time);
-                    }}
-                  />
-                )}
               </View>
-              <View style={styles.dateTimePickerContainer}>
-                <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowEndPicker(true)}>
-                  <Text>{`Jio End Time: ${format(selectedJioEndTime, 'HH:mm')}`}</Text>
-                </TouchableOpacity>
-                {showEndPicker && (
-                  <DateTimePicker
-                    value={selectedJioEndTime}
-                    mode="time"
-                    display="default"
-                    onChange={(event, time) => {
-                      setShowEndPicker(false);
-                      handleEndTimeChange(event, time);
-                    }}
-                  />
-                )}
-              </View>
-              <TouchableOpacity
-                onPress={saveEventSlot}
-                style={{ backgroundColor: 'powderblue', alignSelf: 'center', padding: 10 }}
-              >
-                <Text>Save Event</Text>
-              </TouchableOpacity>
             </View>
           </Modal>
         </ScrollView>
@@ -466,7 +489,7 @@ const ScheduleAvailabilityScreen = () => {
         const endTimeHours = getHours(endTime);
         const startTimeMinutes = getMinutes(startTime);
         const endTimeMinutes = getMinutes(endTime);
-        if (startTimeHours < 7 || startTimeHours > 19 || endTimeHours < 7 || endTimeHours > 19) {
+        if (startTimeHours < 7 || endTimeHours < 7 || (startTimeHours > 23 && startTimeMinutes > 30) || (endTimeHours > 23 && endTimeMinutes > 30)) {
           alert('Error. Only slots from 7am to 11.30pm are available for now');
           return;
         }
@@ -546,6 +569,53 @@ const ScheduleAvailabilityScreen = () => {
           <Text style={styles.bolded}>Your Availability</Text>
           <Text style={styles.heading}> for {eventName}</Text>
         </View>
+        <Modal visible={showTimePickerModal} animationType="slide" onRequestClose={() => setShowTimePickerModal(false)}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalView}>
+              <TouchableOpacity style={{ alignSelf: 'flex-end' }} onPress={() => setShowTimePickerModal(false)}>
+                <Icon2 name="close-outline" size={26} color="black" />
+              </TouchableOpacity>
+              <Text style={{ fontWeight: 'bold' }}>Add your availability on {timePickerDate}</Text>
+              <TouchableOpacity style={{ padding: 5 }} onPress={() => setShowStartPicker(true)}>
+                <Text>Start Time: {format(startTime, 'hh:mm a')}</Text>
+              </TouchableOpacity>
+              {showStartPicker && (
+                <DateTimePicker
+                  value={startTime}
+                  mode="time"
+                  is24Hour={true}
+                  display="default"
+                  onChange={(event, date) => {
+                    setShowStartPicker(false);
+                    if (date) {
+                      setStartTime(date);
+                    }
+                  }}
+                />
+              )}
+              <TouchableOpacity style={{ padding: 5 }} onPress={() => setShowEndPicker(true)}>
+                <Text>End Time: {format(endTime, 'hh:mm a')}</Text>
+              </TouchableOpacity>
+              {showEndPicker && (
+                <DateTimePicker
+                  value={endTime}
+                  mode="time"
+                  is24Hour={true}
+                  display="default"
+                  onChange={(event, date) => {
+                    setShowEndPicker(false);
+                    if (date) {
+                      setEndTime(date);
+                    }
+                  }}
+                />
+              )}
+              <Pressable style={{ padding: 5, backgroundColor: 'white' }} onPress={confirmTimeRange}>
+                <Text style={{ color: '#e6a299', fontWeight: 'bold' }}>ADD TIMESLOTS</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
         <View style={styles.navigation}>
           <Button color='#e6a299' title="<< WEEK" onPress={() => setCurrentWeek(subWeeks(currentWeek, 1))} />
           <TouchableOpacity style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
@@ -561,51 +631,6 @@ const ScheduleAvailabilityScreen = () => {
             </ScrollView>
           </View>
         </ScrollView>
-        <Modal visible={showTimePickerModal} animationType="slide" onRequestClose={() => setShowTimePickerModal(false)}>
-          <View style={styles.modalView}>
-            <TouchableOpacity style={{ alignSelf: 'flex-end' }} onPress={() => setShowTimePickerModal(false)}>
-              <Icon2 name="close-outline" size={26} color="black" />
-            </TouchableOpacity>
-            <Text style={{ fontWeight: 'bold' }}>Add your availability on {timePickerDate}</Text>
-            <TouchableOpacity style={{ padding: 5 }} onPress={() => setShowStartPicker(true)}>
-              <Text>Start Time: {format(startTime, 'hh:mm a')}</Text>
-            </TouchableOpacity>
-            {showStartPicker && (
-              <DateTimePicker
-                value={startTime}
-                mode="time"
-                is24Hour={true}
-                display="default"
-                onChange={(event, date) => {
-                  setShowStartPicker(false);
-                  if (date) {
-                    setStartTime(date);
-                  }
-                }}
-              />
-            )}
-            <TouchableOpacity style={{ padding: 5 }} onPress={() => setShowEndPicker(true)}>
-              <Text>End Time: {format(endTime, 'hh:mm a')}</Text>
-            </TouchableOpacity>
-            {showEndPicker && (
-              <DateTimePicker
-                value={endTime}
-                mode="time"
-                is24Hour={true}
-                display="default"
-                onChange={(event, date) => {
-                  setShowEndPicker(false);
-                  if (date) {
-                    setEndTime(date);
-                  }
-                }}
-              />
-            )}
-            <Pressable style={{ padding: 5, backgroundColor: 'white' }} onPress={confirmTimeRange}>
-              <Text style={{ color: '#e6a299', fontWeight: 'bold' }}>ADD TIMESLOTS</Text>
-            </Pressable>
-          </View>
-        </Modal>
         <View style={styles.bottomContainer}>
           <Pressable onPress={() => navigation.replace('AvailScheduleScreen')}>
             <Icon2 name="arrow-back-circle-outline" size={30} color="grey" />

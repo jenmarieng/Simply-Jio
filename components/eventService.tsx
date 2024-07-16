@@ -1,6 +1,7 @@
 import { db, firebaseAuth } from '../FirebaseConfig';
 import { collection, addDoc, getDocs, query, doc, getDoc, where, updateDoc, arrayUnion, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { getUsername } from '../components/userService';
+import { checkIsChatCreated, addUserIfNotInChat, getChatId } from './chatService';
 
 export const createEvent = async (name: string) => {
   const user = firebaseAuth.currentUser;
@@ -43,6 +44,11 @@ export const joinEvent = async (eventId: string) => {
     await updateDoc(eventRef, {
       participants: arrayUnion({ userId: user.uid, displayName: user.displayName, email: user.email }),
     });
+    //add user to existing chat if chat has already been created from this jio group
+    const chatId = await getChatId(eventId);
+    if (chatId) {
+      await addUserIfNotInChat(chatId);
+    }
   }
   return docSnap.data();
 };

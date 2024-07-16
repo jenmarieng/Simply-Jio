@@ -1,60 +1,112 @@
 import * as React from 'react';
-import { useState } from 'react';
-import { Pressable, View, Text, StyleSheet, TextInput } from 'react-native';
-import { handleUpdateDisplayName, handleUpdateUsername, handleUpdateEmail, handleUpdatePassword } from '../../components/userService';
+import { useState, useEffect } from 'react';
+import { Pressable, View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity } from 'react-native';
+import { handleUpdateDisplayName, handleUpdateUsername, handleUpdateEmail, handleUpdatePassword, saveBirthday, getBirthday } from '../../components/userService';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { format } from 'date-fns';
 
 const Settings = () => {
+  const [birthday, setBirthday] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [username, setUsername] = useState('');
 
+  
+  useEffect(() => {
+    const getBirthdayDate = async () => {
+      try {
+        const getBirthdayDate = await getBirthday();
+        if (getBirthdayDate) {
+          setBirthday(getBirthdayDate);
+        };
+      } catch (error: any) {
+        console.log(error);
+      }
+    }
+
+    getBirthdayDate();
+  }, []);
+
   return (
     <View style={styles.container}>
-      <TextInput
-        value={displayName}
-        style={styles.input}
-        placeholder="Enter your new display name"
-        onChangeText={(text) => setDisplayName(text)}
-      />
-      <Pressable style={styles.updateButton} onPress={() => {handleUpdateDisplayName(displayName), setDisplayName('') }}>
-        <Text>Update display name</Text>
-      </Pressable>
-      <TextInput
-        value={username}
-        style={styles.input}
-        placeholder="Enter your new username"
-        onChangeText={(text) => setUsername(text)}
-      />
-      <Pressable style={styles.updateButton} onPress={() => {handleUpdateUsername(username), setUsername('')}}>
-        <Text>Update username</Text>
-      </Pressable>
-      <TextInput
-        value={newEmail}
-        style={styles.input}
-        placeholder="Enter your new email"
-        onChangeText={(text) => setNewEmail(text)}
-        autoCapitalize='none'
-      />
-      <Pressable style={styles.updateButton} onPress={() => {handleUpdateEmail(newEmail), setNewEmail('') }}>
-        <Text>Update email</Text>
-      </Pressable>
-      <TextInput
-        value={newPassword}
-        style={styles.input}
-        placeholder="Enter your new password"
-        onChangeText={(text) => setNewPassword(text)}
-        autoCapitalize='none'
-        secureTextEntry={true}
-      />
-      <Pressable style={styles.updateButton} onPress={() => {handleUpdatePassword(newPassword), setNewPassword('') }}>
-        <Text>Update password</Text>
-      </Pressable>
+      <ScrollView>
+        <TouchableOpacity style={styles.datePicker} onPress={() => setShowDatePicker(true)}>
+          <Text style={styles.birthdayDate}>{`Your birthday: ${format(birthday, 'dd-MM-yyyy')}`}</Text>
+        </TouchableOpacity>
+        {showDatePicker && (
+          <DateTimePicker
+            value={birthday}
+            mode="date"
+            display="default"
+            onChange={(event, date) => {
+              if (!date || date == new Date()) {
+                alert('Please select a valid date');
+                return;
+              } else if (date > new Date()) {
+                alert('Please select a date in the past');
+                return;
+              };
+              setShowDatePicker(false);
+              setBirthday(date);
+            }}
+          />
+        )}
+        <Pressable style={styles.updateButton} onPress={() => { saveBirthday(birthday) }}>
+          <Text>Save birthday</Text>
+        </Pressable>
+        <TextInput
+          value={displayName}
+          style={styles.input}
+          placeholder="Enter your new display name"
+          onChangeText={(text) => setDisplayName(text)}
+        />
+        <Pressable style={styles.updateButton} onPress={() => { handleUpdateDisplayName(displayName), setDisplayName('') }}>
+          <Text>Update display name</Text>
+        </Pressable>
+        <TextInput
+          value={username}
+          style={styles.input}
+          placeholder="Enter your new username"
+          onChangeText={(text) => setUsername(text)}
+        />
+        <Pressable style={styles.updateButton} onPress={() => { handleUpdateUsername(username), setUsername('') }}>
+          <Text>Update username</Text>
+        </Pressable>
+        <TextInput
+          value={newEmail}
+          style={styles.input}
+          placeholder="Enter your new email"
+          onChangeText={(text) => setNewEmail(text)}
+          autoCapitalize='none'
+        />
+        <Pressable style={styles.updateButton} onPress={() => { handleUpdateEmail(newEmail), setNewEmail('') }}>
+          <Text>Update email</Text>
+        </Pressable>
+        <TextInput
+          value={newPassword}
+          style={styles.input}
+          placeholder="Enter your new password"
+          onChangeText={(text) => setNewPassword(text)}
+          autoCapitalize='none'
+          secureTextEntry={true}
+        />
+        <Pressable style={styles.updateButton} onPress={() => { handleUpdatePassword(newPassword), setNewPassword('') }}>
+          <Text>Update password</Text>
+        </Pressable>
+      </ScrollView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingVertical: 30,
+    justifyContent: 'center',
+    backgroundColor: 'wheat',
+  },
   text: {
     fontSize: 28,
     alignItems: 'center',
@@ -79,10 +131,16 @@ const styles = StyleSheet.create({
     width: '60%',
     alignSelf: 'center',
   },
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    backgroundColor: 'wheat',
+  birthdayDate: {
+    color: 'dimgrey',
+  },
+  datePicker: {
+    backgroundColor: 'beige',
+    borderRadius: 15,
+    padding: 15,
+    marginBottom: 15,
+    width: '60%',
+    alignSelf: 'center',
   },
 });
 
