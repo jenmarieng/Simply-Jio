@@ -1,9 +1,10 @@
-import { View, FlatList, StyleSheet, Button, TextInput, Text, KeyboardAvoidingView, Platform, Pressable, Modal, TouchableOpacity } from 'react-native';
+import { View, FlatList, StyleSheet, Button, TextInput, Text, KeyboardAvoidingView, Platform, Pressable, Modal, TouchableOpacity, Keyboard } from 'react-native';
 import React, { useLayoutEffect, useState } from 'react';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { DocumentData, addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, QueryDocumentSnapshot } from 'firebase/firestore';
 import { db, firebaseAuth } from '../../../FirebaseConfig';
 import { addUserToChat } from '../../../components/chatService';
+import { fetchLikedList } from '../../likes';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 type RootStackParamList = {
@@ -20,6 +21,8 @@ const ChatPage = () => {
   const [message, setMessage] = useState<string>('');
   const [participantUsername, setParticipantUsername] = useState<string>('');
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [likedList, setLikedList] = useState<{ id: string, name: string, address: string }[]>([]);
+  const [isLikedListVisible, setIsLikedListVisible] = useState(false);
 
   const user = firebaseAuth.currentUser;
 
@@ -37,7 +40,11 @@ const ChatPage = () => {
       });
       setMessages(messages);
     });
+    return unsubscribe;
+  }, []);
 
+  useLayoutEffect(() => {
+    const unsubscribe = fetchLikedList(user.uid, setLikedList);
     return unsubscribe;
   }, []);
 
@@ -68,6 +75,14 @@ const ChatPage = () => {
     );
   };
 
+  const renderLikedItem = ({ item }: { item: { id: string, name: string, address: string } }) => (
+    <Pressable onPress={() => setMessage(`${item.name}, ${item.address}`)} style={styles.likedItem}>
+      <Text>{item.name}</Text>
+      <Text>{item.address}</Text>
+    </Pressable>
+  );
+  
+
   const handleCloseEvent = () => {
     setIsModalVisible(false);
     setParticipantUsername('');
@@ -76,6 +91,11 @@ const ChatPage = () => {
   const addUser = () => {
     addUserToChat(id, participantUsername),
     handleCloseEvent();
+  };
+
+  const toggleLikedList = () => {
+    setIsLikedListVisible(!isLikedListVisible);
+    Keyboard.dismiss(); // Dismiss the keyboard when the liked list is toggled
   };
 
   return (
@@ -103,9 +123,16 @@ const ChatPage = () => {
       </Modal>
       {/*<Button title="View Participants" onPress={() => navigation.navigate('ChatDetails')} />*/}
       <Button title="Add Participant" onPress={() => setIsModalVisible(true)} />
+      {isLikedListVisible && (
+        <FlatList data={likedList} keyExtractor={(item) => item.id} renderItem={renderLikedItem} style={styles.likedList} />
+      )}
+
         <FlatList data={messages} keyExtractor={(item) => item.id} renderItem={renderMessage} />
         <View style={styles.inputContainer}>
           <TextInput multiline value={message} onChangeText={(text) => setMessage(text)} placeholder="Type a message" style={styles.messageInput} />
+          <TouchableOpacity onPress={toggleLikedList} style={styles.heartIcon}>
+            <Icon name="heart-outline" size={26} color="red" />
+          </TouchableOpacity>
           <Button disabled={message === ''} title="Send" onPress={sendMessage} />
         </View>
       </KeyboardAvoidingView>
@@ -118,6 +145,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     flexDirection: 'row',
+    alignItems: 'center',
     padding: 10,
     gap: 10,
     backgroundColor: '#fff',
@@ -128,6 +156,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 10,
     padding: 10,
+  },
+  heartIcon: {
+    marginLeft: 10,
   },
   messageContainer: {
     padding: 10,
@@ -171,6 +202,14 @@ const styles = StyleSheet.create({
   addParticipantButton: {
     padding: 5,
     backgroundColor: 'grey',
+  },
+  likedItem: {
+    padding: 10,
+    borderBottomColor: '#ddd',
+    borderBottomWidth: 1,
+  },
+  likedList: {
+    maxHeight: '30%', // Limit the height of the liked list
   },
 });
 
