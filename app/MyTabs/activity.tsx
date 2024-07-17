@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import axios from 'axios';
 import { googlePlaces_api_key } from '../../apiKeys';
+import { getLikedPlaces, saveLikedPlace, removeLikedPlace } from '../likes';
+import { getAuth } from 'firebase/auth';
+import { firebaseApp } from '../../FirebaseConfig';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 const GOOGLE_PLACES_API_KEY = googlePlaces_api_key;
 const BASE_URL = 'https://maps.googleapis.com/maps/api/place/textsearch/json';
@@ -11,6 +15,17 @@ const ActivityJio = () => {
   const [places, setPlaces] = useState<any[]>([]);
   const [query, setQuery] = useState<string>('');
   const [pageToken, setPageToken] = useState<string | null>(null);
+  const [likedItems, setLikedItems] = useState<any[]>([]);
+
+  const auth = getAuth(firebaseApp);
+  const userId = auth.currentUser?.uid;
+
+  useEffect(() => {
+    if (userId) {
+      const unsubscribe = getLikedPlaces(userId, setLikedItems);
+      return () => unsubscribe();
+    }
+  }, [userId]);
 
   type PlacesTypes = {
     [key: string]: string[];
@@ -68,6 +83,18 @@ const ActivityJio = () => {
     );
   };
 
+  const handleLike = async (item: any) => {
+    setLikedItems((prevLikedItems) => {
+      if (prevLikedItems.some((likedItem) => likedItem.place_id === item.place_id)) {
+        removeLikedPlace(userId, item.place_id); // Remove from Firestore
+        return prevLikedItems.filter((likedItem) => likedItem.place_id !== item.place_id);
+      } else {
+        saveLikedPlace(userId, item); // Save to Firestore
+        return [...prevLikedItems, item];
+      }
+    });
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Select filters or start searching for ActivityJios!</Text>
@@ -103,12 +130,19 @@ const ActivityJio = () => {
         keyExtractor={(item) => item.place_id}
         renderItem={({ item }) => {
           const placeTypes = item.types.filter((type: string) => selectedCategories.some(category => placesTypes[category].includes(type)));
+          const isLiked = likedItems.some((likedItem) => likedItem.place_id === item.place_id);
           return (
             <View style={styles.placeContainer}>
               <Text style={styles.name}>{item.name}</Text>
               <Text style={styles.location}>{item.formatted_address}</Text>
               {selectedCategories.length === 0 && <Text style={styles.type}>{item.types.map(formatPlaceType).join(', ')}</Text>}
               {selectedCategories.length > 0 && <Text style={styles.type}>{placeTypes.map(formatPlaceType).join(', ')}</Text>}
+              <TouchableOpacity
+                onPress={() => handleLike(item)}
+                style={[styles.likeButton]} // Apply style based on liked status
+              >
+                <Icon name="heart" size={24} color={isLiked ? 'red' : 'gray'} />
+              </TouchableOpacity>
             </View>
           );
         }}
@@ -164,6 +198,12 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#ffecef',
     borderRadius: 8,
+    position: 'relative', // Added to position the like button absolutely
+  },
+  likeButton: {
+    position: 'absolute', // Positioning like button absolutely
+    top: 10,
+    right: 10,
   },
   loadMoreButton: {
     padding: 5,
