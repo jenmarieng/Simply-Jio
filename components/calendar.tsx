@@ -4,7 +4,7 @@ import { Calendar } from 'react-native-calendars';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
 import { firebaseAuth, db } from '../FirebaseConfig';
-import { loadEvents, saveEvent, updateEvent, deleteEvent } from './eventService';
+import { loadEvents, saveEvent, updateEvent, deleteEvent, sendJioReminders } from './eventService';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Icon2 from 'react-native-vector-icons/AntDesign';
 import { collection, onSnapshot, query } from '@firebase/firestore';
@@ -87,28 +87,17 @@ const App = () => {
     countMonthlyEvents();
   }, [currentMonth, events]);
 
+  useEffect(() => {
+    sendJioReminders();
+  }, [events]);
+
   const handleDayPress = (day: any) => {
-    /*
-    if (multiDayMode) {
-      handleMultiDaySelection(day);
-    } else {*/
     setSelected(day.dateString);
   };
 
   const handleMonthChange = (month: any) => {
     console.log('handleMonthChange', month);
   };
-
-  /*
-  const handleMultiDaySelection = (day: any) => {
-    setMultiDay(prevDays => {
-      if (prevDays.includes(day.dateString)) {
-        return prevDays.filter(d => d !== day.dateString);
-      } else {
-        return [...prevDays, day.dateString];
-      }
-    });
-  };*/
 
   const handleSaveEvent = async () => {
     if (!eventText.trim()) {
@@ -142,7 +131,6 @@ const App = () => {
     setStartTime(new Date());
     setEndTime(new Date());
     setMultiDay([]);
-    //setMultiDayMode(false);
     setIsEditing(false);
     setEditingEventId('');
     setSelectedColor(colorOptions[0]);
@@ -316,11 +304,6 @@ const App = () => {
                   />
                 ))}
               </View>
-              {/*
-          <Button
-            title={`Multi-Day Mode: ${multiDayMode ? 'On' : 'Off'}`}
-            onPress={() => setMultiDayMode(!multiDayMode)}
-          />*/}
               <Pressable style={styles.addEventButton} onPress={handleSaveEvent}>
                 <Text>{isEditing ? 'Update Event' : 'Add Event'}</Text>
               </Pressable>
