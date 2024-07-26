@@ -94,8 +94,12 @@ const ChatPage = () => {
   };
 
   const toggleLikedList = () => {
-    setIsLikedListVisible(!isLikedListVisible);
-    Keyboard.dismiss(); // Dismiss the keyboard when the liked list is toggled
+    if (likedList.length === 0) {
+      alert('No liked places found. Try liking a place now!');
+    } else {
+      setIsLikedListVisible(!isLikedListVisible);
+      Keyboard.dismiss(); 
+    }
   };
 
   return (
