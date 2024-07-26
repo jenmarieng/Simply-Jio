@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, Button, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput, Pressable } from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
-import { saveAvailability, getUserAvailability } from '../../../components/eventService';
+import { saveAvailability, getUserAvailability, getReminderFrequency } from '../../../components/eventService';
 import { subWeeks, addWeeks, format, startOfWeek, addDays, set, getHours, getMinutes } from 'date-fns';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { onSnapshot, collection, addDoc } from 'firebase/firestore';
+import { onSnapshot, collection, addDoc, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db, firebaseAuth } from '../../../FirebaseConfig';
-import { getEventData } from '../../../components/eventService';
+import { getEventData, deleteJioGroup, handleReminderFrequencyChange, addUserToJioGroup } from '../../../components/eventService';
 import * as Clipboard from 'expo-clipboard';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Icon2 from 'react-native-vector-icons/Ionicons';
+import Icon3 from 'react-native-vector-icons/AntDesign';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { startGroupFromJio, checkIsChatCreated, getChatId } from '../../../components/chatService';
 
@@ -38,6 +39,7 @@ interface EventDetails {
   multiDay: string[];
   id: string;
   color: string,
+  JioGroupId: string,
 }
 
 interface Events {
@@ -78,7 +80,6 @@ const ScheduleAvailabilityScreen = () => {
             data[date][timeSlot].push(displayName);
           });
         });
-        //console.log('Fetched Availability Data:', data);
         setAvailabilityData(data);
       }
     );
@@ -87,11 +88,10 @@ const ScheduleAvailabilityScreen = () => {
 
   useEffect(() => {
     const fetchEventData = async () => {
-      const eventData = await getEventData(eventId);
+      const eventData = await getEventData('events', eventId);
       setEventName(eventData.name);
       setParticipants(eventData.participants);
       setParticipantNames(eventData.participants.map((p: { displayName: string }) => p.displayName));
-      //console.log('Fetched Participants:', eventData.participants);
     };
     fetchEventData();
   }, [eventId]);
@@ -101,7 +101,6 @@ const ScheduleAvailabilityScreen = () => {
       if (user) {
         const userAvailability = await getUserAvailability(eventId, user.uid);
         setSelectedTimeSlots(userAvailability);
-        //console.log('Fetched User Availability:', userAvailability);
       }
     };
     fetchUserAvailability();
@@ -157,7 +156,6 @@ const ScheduleAvailabilityScreen = () => {
 
   const handleTimeSlotSelectForDetails = (date: string, timeSlot: string) => {
     const users = availabilityData?.[date]?.[timeSlot] || [];
-    //console.log('Users available at', date, timeSlot, ':', users);
     setAvailableParticipants(users);
     setUnavailableParticipants(participants.filter(p => !users.includes(p.displayName)).map(p => p.displayName));
     setSelectedDate(date);
@@ -205,8 +203,14 @@ const ScheduleAvailabilityScreen = () => {
     const [showStartPicker, setShowStartPicker] = useState(false);
     const [showEndPicker, setShowEndPicker] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
+    const [isConfirmJioModalVisible, setIsConfirmJioModalVisible] = useState(false);
+    const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+    const [jioFrequency, setJioFrequency] = useState<number>(0);
+    const [currJioFrequency, setCurrJioFrequency] = useState<number>(0);
     const [createdChat, setCreatedChat] = useState(false);
     const [chatId, setChatId] = useState('');
+    const [participantUsername, setParticipantUsername] = useState<string>('');
+    const [isAddModalVisible, setIsAddModalVisible] = useState(false);
     const navigation = useNavigation() as any;
 
     const confirmSlots = async () => {
@@ -235,6 +239,7 @@ const ScheduleAvailabilityScreen = () => {
         startTime: format(selectedJioStartTime, 'HH:mm'),
         endTime: format(selectedJioEndTime, 'HH:mm'),
         color: 'peru',
+        JioGroupId: eventId,
       };
 
       if (!user) {
@@ -249,6 +254,12 @@ const ScheduleAvailabilityScreen = () => {
         }
       }
 
+      const eventRef = doc(db, 'events', eventId);
+      await updateDoc(eventRef, {
+        confirmedJioDates: arrayUnion(format(selectedJioDate, 'yyyy-MM-dd'))
+      });
+
+      setIsConfirmJioModalVisible(false);
       setIsModalVisible(false);
       setSelectedJioName('');
       setSelectedJioDate(new Date());
@@ -276,16 +287,7 @@ const ScheduleAvailabilityScreen = () => {
         setSelectedJioEndTime(time);
       }
     };
-    /*
-    useEffect(() => {
-      checkIsChatCreated(eventId).then((result) => {
-        setCreatedChat(result);
 
-        if (result) {
-          setChatId(getChatId(eventId));
-        }
-      })
-    })*/
     useEffect(() => {
       checkIsChatCreated(eventId).then((result) => {
         setCreatedChat(result);
@@ -301,6 +303,12 @@ const ScheduleAvailabilityScreen = () => {
           });
         }
       });
+      getReminderFrequency(eventId).then((result) => {
+        if (result) {
+          setCurrJioFrequency(result);
+          console.log('result', result);
+        }
+      });
     }, [eventId]);
 
     const createGroupChat = async () => {
@@ -311,21 +319,54 @@ const ScheduleAvailabilityScreen = () => {
       setCreatedChat(true);
     };
 
+    const handleDeleteJioGroup = async () => {
+      await deleteJioGroup(eventId);
+      setIsDeleteModalVisible(false);
+      navigation.goBack();
+    }
+
+    const handleCloseEvent = () => {
+      setIsAddModalVisible(false);
+      setParticipantUsername('');
+    };
+
+    const addUser = () => {
+      addUserToJioGroup(eventId, participantUsername);
+      handleCloseEvent();
+      navigation.goBack();
+    };
+
     return (
       <View style={styles.container}>
         <ScrollView style={{ paddingBottom: '10%' }}>
           <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
             <Text style={styles.bolded}> Jio Group: </Text>
             <Text style={styles.heading}>{eventName}</Text>
-            {createdChat ?
-              <TouchableOpacity style={{ marginLeft: 10, backgroundColor: 'black', padding: 2 }} onPress={() => { navigation.navigate('Chats', { screen: 'ChatGroup', params: { id: chatId } }) }}>
-                <Text style={{ color: '#f4d0cb', fontSize: 12, alignSelf: 'center' }}>OPEN CHAT</Text>
-              </TouchableOpacity>
-              :
-              <TouchableOpacity style={{ marginLeft: 10, backgroundColor: 'black', padding: 2 }} onPress={() => createGroupChat()}>
-                <Text style={{ color: '#f4d0cb', fontSize: 12, alignSelf: 'center' }}>CREATE CHAT</Text>
-              </TouchableOpacity>
-            }
+            {/* modal for delete Jio Group */}
+            <Modal
+              animationType="slide"
+              transparent={true}
+              visible={isDeleteModalVisible}
+              onRequestClose={() => setIsDeleteModalVisible(false)}
+            >
+              <View style={styles.modalContainer}>
+                <View style={styles.modalContent}>
+                  <TouchableOpacity style={{ alignSelf: 'flex-end' }} onPress={() => { setIsDeleteModalVisible(false) }}>
+                    <Icon name="close-outline" size={26} color="grey" />
+                  </TouchableOpacity>
+                  <Text>Are you sure you want to delete this group?</Text>
+                  <Pressable style={styles.deleteGroupButton} onPress={() => handleDeleteJioGroup()}>
+                    <Text style={{ color: 'white', alignSelf: 'center' }}>Yes</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </Modal>
+            <Pressable style={{ marginLeft: 5 }} onPress={() => setIsAddModalVisible(true)}>
+              <Icon2 name="person-add-outline" size={20} color="grey" />
+            </Pressable>
+            <TouchableOpacity style={{ alignContent: 'flex-end', flexDirection: 'row-reverse', marginLeft: 5 }} onPress={() => setIsDeleteModalVisible(true)}>
+              <Icon3 name="delete" size={20} color="gray" />
+            </TouchableOpacity>
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
             <Text style={styles.bolded}> Jio Group ID: </Text>
@@ -337,12 +378,45 @@ const ScheduleAvailabilityScreen = () => {
               </View>
             </TouchableOpacity>
           </View>
+          {/* modal for adding participants */}
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={isAddModalVisible}
+            onRequestClose={() => setIsAddModalVisible(false)}
+          >
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <TouchableOpacity style={{ alignSelf: 'flex-end' }} onPress={handleCloseEvent}>
+                  <Icon name="close-outline" size={26} color="black" />
+                </TouchableOpacity>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Participant's Username"
+                  value={participantUsername}
+                  onChangeText={setParticipantUsername}
+                />
+                <Pressable style={styles.addParticipantButton} onPress={addUser}>
+                  <Text style={{ color: 'white' }}>Add Participant</Text>
+                </Pressable>
+              </View>
+            </View>
+          </Modal>
           <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
-            <Text style={styles.bolded}>Group Availability</Text>
-            <TouchableOpacity style={{ marginLeft: 10, backgroundColor: 'black', padding: 4 }} onPress={confirmSlots}>
-              <Text style={{ color: '#f4d0cb', fontSize: 12 }}>CONFIRM JIO</Text>
+            {createdChat ?
+              <TouchableOpacity style={styles.additionalButton} onPress={() => { navigation.navigate('Chats', { screen: 'ChatGroup', params: { id: chatId } }) }}>
+                <Text style={{ color: '#f4d0cb', fontSize: 14 }}>OPEN CHAT</Text>
+              </TouchableOpacity>
+              :
+              <TouchableOpacity style={styles.additionalButton} onPress={() => createGroupChat()}>
+                <Text style={{ color: '#f4d0cb', fontSize: 14 }}>CREATE CHAT</Text>
+              </TouchableOpacity>
+            }
+            <TouchableOpacity style={styles.additionalButton} onPress={confirmSlots}>
+              <Text style={{ color: '#f4d0cb', fontSize: 14 }}>EDIT JIO DETAILS</Text>
             </TouchableOpacity>
           </View>
+          <Text style={styles.bolded}>Group Availability</Text>
           {(selectedDate && selectedTime) ?
             <>
               <Text>Available: {availableParticipants.join(', ')}</Text>
@@ -352,6 +426,7 @@ const ScheduleAvailabilityScreen = () => {
             :
             <Text>Participants: {participantNames.join(', ')}</Text>
           }
+          {/* modal for confirm jio details or jio reminder frequency */}
           <Modal
             animationType="slide"
             transparent={true}
@@ -362,6 +437,58 @@ const ScheduleAvailabilityScreen = () => {
               <View style={styles.modalContent}>
                 <TouchableOpacity style={{ alignSelf: 'flex-end' }} onPress={() => {
                   setIsModalVisible(false);
+                }}>
+                  <Icon name="close-outline" size={26} color="grey" />
+                </TouchableOpacity>
+                <Text>Frequency of group reminder to Jio:</Text>
+                {(currJioFrequency != 0) ?
+                  <Text>{currJioFrequency} days</Text>
+                  :
+                  <Text>It has not been set.</Text>
+                }
+                <ScrollView horizontal>
+                  <TouchableOpacity style={styles.freqButton} onPress={() => setJioFrequency(7)}>
+                    <Text>weekly</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.freqButton} onPress={() => setJioFrequency(14)}>
+                    <Text>fortnightly</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.freqButton} onPress={() => setJioFrequency(30)}>
+                    <Text>monthly</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.freqButton} onPress={() => setJioFrequency(60)}>
+                    <Text>every 2 months</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.freqButton} onPress={() => setJioFrequency(90)}>
+                    <Text>every 3 months</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.freqButton} onPress={() => setJioFrequency(180)}>
+                    <Text>every 6 months</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.freqButton} onPress={() => setJioFrequency(365)}>
+                    <Text>yearly</Text>
+                  </TouchableOpacity>
+                </ScrollView>
+                <Pressable style={styles.saveFreqButton} onPress={() => [handleReminderFrequencyChange(eventId, jioFrequency), setCurrJioFrequency(jioFrequency)]}>
+                  <Text>SAVE</Text>
+                </Pressable>
+                <Pressable style={styles.confirmJioButton} onPress={() => setIsConfirmJioModalVisible(true)}>
+                  <Text>CONFIRM JIO</Text>
+                </Pressable>
+              </View>
+            </View>
+          </Modal>
+          {/* modal for confirming Jio and its details */}
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={isConfirmJioModalVisible}
+            onRequestClose={() => setIsConfirmJioModalVisible(false)}
+          >
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <TouchableOpacity style={{ alignSelf: 'flex-end' }} onPress={() => {
+                  setIsConfirmJioModalVisible(false);
                   setSelectedJioName('');
                   setSelectedJioDate(new Date());
                   setSelectedJioStartTime(new Date());
@@ -569,7 +696,7 @@ const ScheduleAvailabilityScreen = () => {
           <Text style={styles.bolded}>Your Availability</Text>
           <Text style={styles.heading}> for {eventName}</Text>
         </View>
-        <Modal visible={showTimePickerModal} animationType="slide" onRequestClose={() => setShowTimePickerModal(false)}>
+        <Modal visible={showTimePickerModal} transparent={true} animationType="slide" onRequestClose={() => setShowTimePickerModal(false)}>
           <View style={styles.modalContainer}>
             <View style={styles.modalView}>
               <TouchableOpacity style={{ alignSelf: 'flex-end' }} onPress={() => setShowTimePickerModal(false)}>
@@ -777,6 +904,56 @@ const styles = StyleSheet.create({
   modalText: {
     fontSize: 16,
     marginBottom: 8,
+  },
+  deleteGroupButton: {
+    padding: 4,
+    width: 40,
+    borderRadius: 5,
+    backgroundColor: '#e6a299',
+    alignSelf: 'center',
+    marginTop: 8,
+  },
+  freqButton: {
+    padding: 4,
+    width: 100,
+    backgroundColor: '#bdbdbd',
+    borderRadius: 5,
+    margin: 5,
+    alignItems: 'center',
+    alignSelf: 'center',
+  },
+  saveFreqButton: {
+    alignItems: 'center',
+    alignSelf: 'center',
+    padding: 5,
+    width: "98%",
+    borderRadius: 5,
+    borderWidth: 1,
+  },
+  confirmJioButton: {
+    marginTop: 20,
+    alignItems: 'center',
+    alignSelf: 'center',
+    padding: 4,
+    width: 120,
+    borderRadius: 5,
+    backgroundColor: 'powderblue',
+  },
+  addParticipantButton: {
+    padding: 5,
+    backgroundColor: '#e6a299',
+    alignSelf: 'center',
+    alignItems: 'center',
+    borderRadius: 5,
+    width: 120,
+  },
+  additionalButton: {
+    marginLeft: 10,
+    backgroundColor: 'black',
+    padding: 4,
+    borderRadius: 5,
+    alignItems: 'center',
+    width: 150,
   },
 });
 

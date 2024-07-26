@@ -1,11 +1,11 @@
 import { View, FlatList, StyleSheet, Button, TextInput, Text, KeyboardAvoidingView, Platform, Pressable, Modal, TouchableOpacity, Keyboard } from 'react-native';
-import React, { useLayoutEffect, useState } from 'react';
-import { useRoute, RouteProp } from '@react-navigation/native';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
+import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { DocumentData, addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, QueryDocumentSnapshot } from 'firebase/firestore';
 import { db, firebaseAuth } from '../../../FirebaseConfig';
-import { addUserToChat } from '../../../components/chatService';
-import { fetchLikedList } from '../../likes';
+import { fetchLikedList } from '../../../components/likes';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { getChatName } from '../../../components/chatService';
 
 type RootStackParamList = {
   ChatGroup: { id: string };
@@ -15,20 +15,27 @@ type ChatPageScreenRouteProp = RouteProp<RootStackParamList, 'ChatGroup'>;
 
 const ChatPage = () => {
   const route = useRoute<ChatPageScreenRouteProp>();
+  const navigation = useNavigation() as any;
   const { id } = route.params;
-  //const { id } = useLocalSearchParams<{ id: string }>();
   const [messages, setMessages] = useState<DocumentData[]>([]);
   const [message, setMessage] = useState<string>('');
-  const [participantUsername, setParticipantUsername] = useState<string>('');
-  const [isModalVisible, setIsModalVisible] = useState(false);
   const [likedList, setLikedList] = useState<{ id: string, name: string, address: string }[]>([]);
   const [isLikedListVisible, setIsLikedListVisible] = useState(false);
+  const [groupName, setGroupName] = useState<string>('');
 
   const user = firebaseAuth.currentUser;
 
   if (!user) {
     return null;
   }
+
+  useEffect(() => {
+    const fetchGroupName = async () => {
+      const groupName = await getChatName(id);
+      setGroupName(groupName);
+    };
+    fetchGroupName();
+  }, []);
 
   useLayoutEffect(() => {
     const msgCollectionRef = collection(db, `groups/${id}/messages`);
@@ -81,17 +88,6 @@ const ChatPage = () => {
       <Text>{item.address}</Text>
     </Pressable>
   );
-  
-
-  const handleCloseEvent = () => {
-    setIsModalVisible(false);
-    setParticipantUsername('');
-  };
-
-  const addUser = () => {
-    addUserToChat(id, participantUsername),
-    handleCloseEvent();
-  };
 
   const toggleLikedList = () => {
     if (likedList.length === 0) {
@@ -103,49 +99,40 @@ const ChatPage = () => {
   };
 
   return (
-      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={200}>
-        <Modal
-        animationType="slide"
-        transparent={true}
-        visible={isModalVisible}
-        onRequestClose={() => setIsModalVisible(false)}
-      >
-        <View style={styles.modalView}>
-          <TouchableOpacity style={{ alignSelf: 'flex-end' }} onPress={handleCloseEvent}>
-            <Icon name="close-outline" size={26} color="black" />
-          </TouchableOpacity>
-          <TextInput
-            style={styles.input}
-            placeholder="Participant's Username"
-            value={participantUsername}
-            onChangeText={setParticipantUsername}
-          />
-          <Pressable style={styles.addParticipantButton} onPress={addUser}>
-            <Text style={{ color: 'white' }}>Add Participant</Text>
-          </Pressable>
-        </View>
-      </Modal>
-      {/*<Button title="View Participants" onPress={() => navigation.navigate('ChatDetails')} />*/}
-      <Button title="Add Participant" onPress={() => setIsModalVisible(true)} />
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={200}>
+      <View style={styles.header}>
+        <Pressable onPress={() => navigation.replace('ChatLists')}>
+          <Icon name="arrow-back" size={28} color="grey" />
+        </Pressable>
+        <TouchableOpacity onPress={() => navigation.navigate('ChatDetails', { id })}>
+          <Text style={styles.groupName}>{groupName}</Text>
+        </TouchableOpacity>
+      </View>
       {isLikedListVisible && (
         <FlatList data={likedList} keyExtractor={(item) => item.id} renderItem={renderLikedItem} style={styles.likedList} />
       )}
-
-        <FlatList data={messages} keyExtractor={(item) => item.id} renderItem={renderMessage} />
-        <View style={styles.inputContainer}>
-          <TextInput multiline value={message} onChangeText={(text) => setMessage(text)} placeholder="Type a message" style={styles.messageInput} />
-          <TouchableOpacity onPress={toggleLikedList} style={styles.heartIcon}>
-            <Icon name="heart-outline" size={26} color="red" />
-          </TouchableOpacity>
-          <Button disabled={message === ''} title="Send" onPress={sendMessage} />
-        </View>
-      </KeyboardAvoidingView>
+      <FlatList data={messages} keyExtractor={(item) => item.id} renderItem={renderMessage} />
+      <View style={styles.inputContainer}>
+        <TextInput multiline value={message} onChangeText={(text) => setMessage(text)} placeholder="Type a message" style={styles.messageInput} />
+        <TouchableOpacity onPress={toggleLikedList} style={styles.heartIcon}>
+          <Icon name="heart-outline" size={26} color="red" />
+        </TouchableOpacity>
+        <Button disabled={message === ''} title="Send" onPress={sendMessage} />
+      </View>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    backgroundColor: '#e5d3b8',
+    padding: 10,
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 18,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -186,26 +173,10 @@ const styles = StyleSheet.create({
     color: '#777',
     alignSelf: 'flex-end',
   },
-  modalView: {
-    margin: 20,
-    backgroundColor: '#dcae96',
-    borderRadius: 20,
-    padding: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 5,
-  },
-  input: {
-    height: 40,
-    borderColor: 'black',
-    borderWidth: 1,
-    marginBottom: 12,
-    width: '80%',
-    paddingLeft: 8,
-  },
-  addParticipantButton: {
-    padding: 5,
-    backgroundColor: 'grey',
+  groupName: {
+    marginLeft: 10,
+    fontSize: 24,
+    fontWeight: 'bold',
   },
   likedItem: {
     padding: 10,

@@ -1,5 +1,6 @@
 import { db, firebaseAuth } from '../FirebaseConfig';
-import { collection, addDoc, getDocs, query, doc, getDoc, where, updateDoc, arrayUnion, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, doc, getDoc, where, updateDoc, arrayUnion, onSnapshot, deleteDoc } from 'firebase/firestore';
+import { getUsername } from './userService';
 
 export const startGroup = async (groupName: string) => {
     const user = firebaseAuth.currentUser;
@@ -28,8 +29,8 @@ export const startGroup = async (groupName: string) => {
             await addDoc(groupRef, {
                 name: groupName || `Group #${Math.floor(Math.random() * 1000)}`,
                 description: 'Chat group',
-                creator: [{ userId: user.uid, displayName: user.displayName, email: user.email }],
-                participants: [{ userId: user.uid, displayName: user.displayName, email: user.email }],
+                creator: [{ userId: user.uid, displayName: user.displayName, email: user.email, username: userData.username }],
+                participants: [{ userId: user.uid, displayName: user.displayName, email: user.email, username: userData.username }],
             });
         } catch (error) {
             console.log('error creating group', error);
@@ -90,7 +91,7 @@ export const addUserToChat = async (groupId: string, participantUsername: string
         const existingParticipant = chatData.participants.find((participant: any) => participant.userId === participantId);
         if (!existingParticipant) {
             await updateDoc(chatRef, {
-                participants: arrayUnion({ userId: participantId, displayName: participantData.displayName || 'Anonymous', email: participantData.email }),
+                participants: arrayUnion({ userId: participantId, displayName: participantData.displayName || 'Anonymous', email: participantData.email, username: participantData.username }),
             });
             alert('User added to chat!');
         } else {
@@ -122,13 +123,15 @@ export const addUserIfNotInChat = async (chatId: string) => {
         return null;
     }
 
+    const username = await getUsername(user.uid);
+
     const groupsRef = collection(db, 'groups', chatId, 'participants');
     const q = query(groupsRef, where('userId', '==', user.uid));
     const querySnapshot = await getDocs(q);
     if (querySnapshot.empty) {
         try {
             await updateDoc(doc(db, 'groups', chatId), {
-                participants: arrayUnion({ userId: user.uid, name: user.displayName || 'Anonymous', email: user.email }),
+                participants: arrayUnion({ userId: user.uid, displayName: user.displayName || 'Anonymous', email: user.email, username }),
             });
         } catch (error) {
             console.log('Error adding user to chat:', error);
@@ -160,23 +163,14 @@ export const startGroupFromJio = async (groupName: string, eventId: string) => {
         alert('Please set a display name first!');
         return null;
     }
-
-    const userDocRef = doc(db, 'users', user.uid);
-    const userDocSnap = await getDoc(userDocRef);
-    const userData = userDocSnap.data();
-
-    if (!userData) {
-        console.log('User data not found');
-        return null;
-    }
-
+    const username = await getUsername(user.uid);
     const groupRef = collection(db, 'groups');
     if (groupRef) {
         try {
             await addDoc(groupRef, {
                 name: groupName || `Group #${Math.floor(Math.random() * 1000)}`,
                 description: 'Chat group created from Jio Group',
-                creator: [{ userId: user.uid, displayName: user.displayName, email: user.email }],
+                creator: [{ userId: user.uid, displayName: user.displayName, email: user.email, username }],
                 participants,
                 JioGroupId: eventId,
             });
@@ -202,3 +196,63 @@ export const checkIsChatCreated = async (eventId: string) => {
         return true;
     }
 };
+
+export const getChatName = async (chatId: string) => {
+    const chatRef = doc(db, 'groups', chatId);
+    const chatSnap = await getDoc(chatRef);
+    if (!chatSnap.exists()) {
+        console.log('Chat does not exist');
+        return null;
+    }
+    const chatData = chatSnap.data();
+    if (!chatData) {
+        console.log('Chat data not found');
+        return null;
+    }
+    return chatData.name;
+};
+
+export const deleteChatGroup = async (chatId: string) => {
+    const user = firebaseAuth.currentUser;
+    if (!user) {
+        return null;
+    }
+
+    try {
+        const chatRef = doc(db, 'groups', chatId);
+        await deleteDoc(chatRef);
+        alert('Chat Group deleted');
+    } catch (error) {
+        console.error('Error deleting Chat Group: ', error);
+    }
+};
+
+export const leaveChatGroup = async (chatId: string) => {
+    const user = firebaseAuth.currentUser;
+    if (!user) {
+        return null;
+    }
+
+    try {
+        const chatRef = doc(db, 'groups', chatId);
+        const chatSnap = await getDoc(chatRef);
+        if (!chatSnap.exists()) {
+            console.log('Chat does not exist');
+            return null;
+        }
+
+        const chatData = chatSnap.data();
+        if (!chatData) {
+            console.log('Chat data not found');
+            return null;
+        }
+
+        const updatedParticipants = chatData.participants.filter((participant: any) => participant.userId !== user.uid);
+        await updateDoc(chatRef, {
+            participants: updatedParticipants,
+        });
+        alert('You have left the chat group');
+    } catch (error) {
+        console.error('Error leaving Chat Group: ', error);
+    }
+}

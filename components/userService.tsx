@@ -2,126 +2,144 @@ import { firebaseAuth, db } from '../FirebaseConfig';
 import { updateProfile, updateEmail, updatePassword } from 'firebase/auth';
 import { doc, updateDoc, query, where, collection, getDocs, setDoc, getDoc, addDoc } from 'firebase/firestore';
 
-/* not working yet
-const updateUserDisplayName = async (userId: string, newDisplayName: string) => {
+const updateUserDisplayName = async (userId: string, newName: string) => {
     try {
+        //Update display name in groups collection
         const groupsCollection = collection(db, 'groups');
-        const groupsQ = query(groupsCollection, where('userId', '==', userId));
-        const groupsQuerySnapshot = await getDocs(groupsQ);
+        const groupsQuerySnapshot = await getDocs(groupsCollection);
         groupsQuerySnapshot.forEach(async (docSnapshot) => {
-            await updateDoc(doc(db, 'users', docSnapshot.id), { displayName: newDisplayName });
+            const groupData = docSnapshot.data();
+            let shouldUpdate = false;
+            const updatedGroupData = { ...groupData };
+
+            if (groupData.creator) {
+                updatedGroupData.creator = groupData.creator.map((creator: any) => {
+                    if (creator.userId === userId) {
+                        shouldUpdate = true;
+                        return { ...creator, displayName: newName };
+                    }
+                    return creator;
+                });
+            }
+
+            if (groupData.participants) {
+                updatedGroupData.participants = groupData.participants.map((participant: any) => {
+                    if (participant.userId === userId) {
+                        shouldUpdate = true;
+                        return { ...participant, displayName: newName };
+                    }
+                    return participant;
+                });
+            }
+
+            if (shouldUpdate) {
+                await updateDoc(doc(db, 'groups', docSnapshot.id), updatedGroupData);
+                console.log("Display name updated successfully in group " + docSnapshot.id);
+            }
+
+            const messagesCollection = collection(db, 'groups', docSnapshot.id, 'messages');
+            const messagesQ = query(messagesCollection, where('senderId', '==', userId));
+            const messagesQuerySnapshot = await getDocs(messagesQ);
+            messagesQuerySnapshot.forEach(async (messageDoc) => {
+                await updateDoc(doc(db, 'groups', docSnapshot.id, 'messages', messageDoc.id), { senderName: newName });
+                console.log("Display name updated successfully in messages " + messageDoc.id);
+            });
         });
 
-        const eventsCollection = collection(db, 'events');
-        const eventsQ = query(eventsCollection, where('userId', '==', userId));
-        const eventsQuerySnapshot = await getDocs(eventsQ);
-        eventsQuerySnapshot.forEach(async (docSnapshot) => {
-            await updateDoc(doc(db, 'users', docSnapshot.id), { displayName: newDisplayName });
-        });
-        console.log('User details updated successfully in all documents');
-        alert('User details updated successfully in all documents');
-    } catch (error) {
-        alert('Error updating user details!');
-        console.error('Error updating user details:', error);
-    }
-};
-
-const updateUserDisplayName = async (userId: any, newDisplayName: any) => {
-    try {
-        const groupsCollection = collection(db, 'groups');
-        const groupsQ = query(groupsCollection, where('userId', '==', userId));
-        const groupsQuerySnapshot = await getDocs(groupsQ);
-
-        for (const docSnapshot of groupsQuerySnapshot.docs) {
-            await updateDoc(docSnapshot.ref, { displayName: newDisplayName });
-        }
-
+        //Update display name in events collection
         const eventsCollection = collection(db, 'events');
         const eventsQuerySnapshot = await getDocs(eventsCollection);
-
-        for (const docSnapshot of eventsQuerySnapshot.docs) {
+        eventsQuerySnapshot.forEach(async (docSnapshot) => {
             const eventData = docSnapshot.data();
-            let updated = false;
+            let shouldUpdate = false;
+            const updatedEventData = { ...eventData };
 
-            const updatedCreator = eventData.creator.map((user: any) => {
-                if (user.userId === userId) {
-                    updated = true;
-                    return { ...user, displayName: newDisplayName };
-                }
-                return user;
-            });
-
-            const updatedParticipants = eventData.participants.map((participant: any) => {
-                if (participant.userId === userId) {
-                    updated = true;
-                    return { ...participant, displayName: newDisplayName };
-                }
-                return participant;
-            });
-
-            if (updated) {
-                await updateDoc(docSnapshot.ref, {
-                    creator: updatedCreator,
-                    participants: updatedParticipants,
+            if (eventData.creator) {
+                updatedEventData.creator = eventData.creator.map((creator: any) => {
+                    if (creator.userId === userId) {
+                        shouldUpdate = true;
+                        return { ...creator, displayName: newName };
+                    }
+                    return creator;
                 });
-                console.log('User firestore details updated');
             }
+
+            if (eventData.participants) {
+                updatedEventData.participants = eventData.participants.map((participant: any) => {
+                    if (participant.userId === userId) {
+                        shouldUpdate = true;
+                        return { ...participant, displayName: newName };
+                    }
+                    return participant;
+                });
+            }
+
+            if (shouldUpdate) {
+                await updateDoc(doc(db, 'events', docSnapshot.id), updatedEventData);
+                console.log("Display name updated successfully in event " + docSnapshot.id);
+            }
+
+            const userAvailabilitiesCollection = collection(db, 'events', docSnapshot.id, 'userAvailabilities');
+            const availabilitiesQ = query(userAvailabilitiesCollection, where('userId', '==', userId));
+            const availabilitiesQuerySnapshot = await getDocs(availabilitiesQ);
+            availabilitiesQuerySnapshot.forEach(async (availabilityDoc) => {
+                await updateDoc(doc(db, 'events', docSnapshot.id, 'userAvailabilities', availabilityDoc.id), { displayName: newName });
+                console.log("Display name updated successfully in userAvailabilities " + availabilityDoc.id);
+            });
+        });
+
+        console.log('User details updated successfully in all documents');
+    } catch (error) {
+        console.error('Error updating user details:', error);
+    }
+};
+
+export const handleUpdateDisplayName = async (displayName: string) => {
+    const user = firebaseAuth.currentUser;
+
+    if (!user) {
+        console.log('No user is currently logged in.');
+        return null;
+    }
+
+    if (displayName === user.displayName) {
+        alert('Display name is already set to ' + displayName);
+        return;
+    } else if (!displayName) {
+        alert('Display name cannot be empty');
+        return;
+    }
+
+    try {
+        console.log('Updating user profile displayName...');
+        await updateProfile(user, {
+            displayName,
+        });
+
+        const userRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userRef);
+
+        if (!userDoc.exists()) {
+            console.log('Creating new user document...');
+            await setDoc(userRef, {
+                displayName: user.displayName,
+                email: user.email,
+            });
+        } else {
+            console.log('Updating existing user document...');
+            await updateDoc(userRef, {
+                displayName,
+            });
+            await updateUserDisplayName(user.uid, displayName);
         }
 
-        alert('User details updated successfully in all documents');
+        await user.reload();
+        alert('Display name updated successfully');
     } catch (error) {
-        alert('Error updating user details!');
-        console.error('Error updating user details:', error);
+        alert('Error updating name!');
+        console.error('Error updating display name:', error);
     }
 };
-
-
-const updateUsername = async (userId: string, newUserame: string) => {
-    try {
-        const groupsCollection = collection(db, 'groups');
-        const groupsQ = query(groupsCollection, where('userId', '==', userId));
-        const groupsQuerySnapshot = await getDocs(groupsQ);
-        groupsQuerySnapshot.forEach(async (docSnapshot) => {
-            await updateDoc(doc(db, 'users', docSnapshot.id), { username: newUserame });
-        });
-
-        const eventsCollection = collection(db, 'events');
-        const eventsQ = query(eventsCollection, where('userId', '==', userId));
-        const eventsQuerySnapshot = await getDocs(eventsQ);
-        eventsQuerySnapshot.forEach(async (docSnapshot) => {
-            await updateDoc(doc(db, 'users', docSnapshot.id), { username: newUserame });
-        });
-        console.log('User details updated successfully in all documents');
-        alert('User details updated successfully in all documents');
-    } catch (error) {
-        alert('Error updating user details!');
-        console.error('Error updating user details:', error);
-    }
-};
-
-const updateUserEmail = async (userId: string, newEmail: string) => {
-    try {
-        const groupsCollection = collection(db, 'groups');
-        const groupsQ = query(groupsCollection, where('userId', '==', userId));
-        const groupsQuerySnapshot = await getDocs(groupsQ);
-        groupsQuerySnapshot.forEach(async (docSnapshot) => {
-            await updateDoc(doc(db, 'users', docSnapshot.id), { email: newEmail });
-        });
-
-        const eventsCollection = collection(db, 'events');
-        const eventsQ = query(eventsCollection, where('userId', '==', userId));
-        const eventsQuerySnapshot = await getDocs(eventsQ);
-        eventsQuerySnapshot.forEach(async (docSnapshot) => {
-            await updateDoc(doc(db, 'users', docSnapshot.id), { email: newEmail });
-        });
-
-        alert('User details updated successfully in all documents');
-    } catch (error) {
-        alert('Error updating user details!');
-        console.error('Error updating user details:', error);
-    }
-};
-*/
 
 export const getUsername = async (userId: string) => {
     const userRef = doc(db, 'users', userId);
@@ -172,45 +190,6 @@ export const getEmailFromUsername = async (username: string) => {
     }
 }
 
-export const handleUpdateDisplayName = async (displayName: string) => {
-    const user = firebaseAuth.currentUser;
-
-    if (!user) {
-        return null;
-    };
-
-    if (displayName === user.displayName) {
-        alert('Display name is already set to ' + displayName);
-        return;
-    } else if (!displayName) {
-        alert('Display name cannot be empty');
-        return;
-    } else try {
-        await updateProfile(user, {
-            displayName,
-        });
-        const userRef = doc(db, 'users', user.uid);
-        const userDoc = await getDoc(userRef);
-
-        if (!userDoc.exists()) {
-            await setDoc(userRef, {
-                displayName: user.displayName,
-                email: user.email,
-            });
-        } else {
-            await updateDoc(userRef, {
-                displayName,
-            });
-        };
-        //updateUserDisplayName(user.uid, displayName);
-        await user.reload();
-        alert('Display name updated successfully');
-    } catch (error) {
-        alert('Error updating name!');
-        console.error('Error updating display name:', error);
-    }
-};
-
 export const handleUpdateUsername = async (username: string) => {
     const user = firebaseAuth.currentUser;
 
@@ -227,15 +206,6 @@ export const handleUpdateUsername = async (username: string) => {
         alert('Username is already set to ' + username);
         return;
     } else try {
-        /*
-        const usersCollection = collection(db, 'users');
-        const q = query(usersCollection, where('username', '==', username));
-        const querySnapshot = await getDocs(q);
-
-        if (!querySnapshot.empty) {
-            alert('Username already exists!');
-            return null;
-        }*/
         checkIfUsernameExists(username);
         const userRef = doc(db, 'users', user.uid);
         const userDoc = await getDoc(userRef);
@@ -253,12 +223,87 @@ export const handleUpdateUsername = async (username: string) => {
                 displayName: user.displayName || 'Anonymous',
             });
         }
-        //updateUsername(user.uid, username);
         await user.reload();
         alert('Username updated successfully');
     } catch (error) {
         alert('Error updating username!');
         console.error('Error updating username:', error);
+    }
+};
+
+const updateUserEmail = async (userId: string, newEmail: string) => {
+    try {
+        //Update email in groups collection
+        const groupsCollection = collection(db, 'groups');
+        const groupsQuerySnapshot = await getDocs(groupsCollection);
+        groupsQuerySnapshot.forEach(async (docSnapshot) => {
+            const groupData = docSnapshot.data();
+            let shouldUpdate = false;
+            const updatedGroupData = { ...groupData };
+
+            if (groupData.creator) {
+                updatedGroupData.creator = groupData.creator.map((creator: any) => {
+                    if (creator.userId === userId) {
+                        shouldUpdate = true;
+                        return { ...creator, email: newEmail };
+                    }
+                    return creator;
+                });
+            }
+
+            if (groupData.participants) {
+                updatedGroupData.participants = groupData.participants.map((participant: any) => {
+                    if (participant.userId === userId) {
+                        shouldUpdate = true;
+                        return { ...participant, email: newEmail };
+                    }
+                    return participant;
+                });
+            }
+
+            if (shouldUpdate) {
+                await updateDoc(doc(db, 'groups', docSnapshot.id), updatedGroupData);
+                console.log("Email updated successfully in group " + docSnapshot.id);
+            }
+        });
+
+        //Update email in events collection
+        const eventsCollection = collection(db, 'events');
+        const eventsQuerySnapshot = await getDocs(eventsCollection);
+        eventsQuerySnapshot.forEach(async (docSnapshot) => {
+            const eventData = docSnapshot.data();
+            let shouldUpdate = false;
+            const updatedEventData = { ...eventData };
+
+            if (eventData.creator) {
+                updatedEventData.creator = eventData.creator.map((creator: any) => {
+                    if (creator.userId === userId) {
+                        shouldUpdate = true;
+                        return { ...creator, email: newEmail };
+                    }
+                    return creator;
+                });
+            }
+
+            if (eventData.participants) {
+                updatedEventData.participants = eventData.participants.map((participant: any) => {
+                    if (participant.userId === userId) {
+                        shouldUpdate = true;
+                        return { ...participant, email: newEmail };
+                    }
+                    return participant;
+                });
+            }
+
+            if (shouldUpdate) {
+                await updateDoc(doc(db, 'events', docSnapshot.id), updatedEventData);
+                console.log("Email updated successfully in event " + docSnapshot.id);
+            }
+        });
+
+        console.log('User details updated successfully in all documents');
+    } catch (error) {
+        console.error('Error updating user details:', error);
     }
 };
 
@@ -281,7 +326,7 @@ export const handleUpdateEmail = async (newEmail: string) => {
         await updateDoc(userRef, {
             email: newEmail,
         });
-        //updateUserEmail(user.uid, newEmail);
+        await updateUserEmail(user.uid, newEmail);
         await user.reload();
         alert('Email updated successfully');
     } catch (error) {
@@ -307,46 +352,5 @@ export const handleUpdatePassword = async (newPassword: string) => {
     } catch (error) {
         alert('Error updating password!');
         console.error('Error updating password:', error);
-    }
-};
-
-export const saveBirthday = async (birthday: Date) => {
-    const user = firebaseAuth.currentUser;
-
-    if (!user) {
-        return null;
-    }
-
-    const userRef = doc(db, 'users', user.uid);
-    try {
-        await updateDoc(userRef, {
-            birthday,
-        });
-        alert('Birthday updated successfully');
-    } catch (error) {
-        alert('Error updating birthday!');
-        console.error('Error updating birthday:', error);
-    }
-};
-
-export const getBirthday = async () => {
-    const user = firebaseAuth.currentUser;
-
-    if (!user) {
-        return null;
-    }
-
-    const q = doc(db, 'users', user.uid);
-    try {
-        const userDoc = await getDoc(q);
-        if (userDoc.exists()) {
-            if (!userDoc.data().birthday) {
-                return null;
-            }
-            console.log('Birthday:', userDoc.data().birthday.toDate());
-            return userDoc.data().birthday.toDate();
-        }
-    } catch (error) {
-        console.error('Error retrieving birthday:', error);
     }
 };

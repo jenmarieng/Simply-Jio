@@ -1,61 +1,17 @@
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Pressable, View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity } from 'react-native';
-import { handleUpdateDisplayName, handleUpdateUsername, handleUpdateEmail, handleUpdatePassword, saveBirthday, getBirthday } from '../../components/userService';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { format } from 'date-fns';
+import { handleUpdateDisplayName, handleUpdateUsername, handleUpdateEmail, handleUpdatePassword } from '../../components/userService';
 
 const Settings = () => {
-  const [birthday, setBirthday] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [username, setUsername] = useState('');
 
-  
-  useEffect(() => {
-    const getBirthdayDate = async () => {
-      try {
-        const getBirthdayDate = await getBirthday();
-        if (getBirthdayDate) {
-          setBirthday(getBirthdayDate);
-        };
-      } catch (error: any) {
-        console.log(error);
-      }
-    }
-
-    getBirthdayDate();
-  }, []);
-
-  return (
+    return (
     <View style={styles.container}>
       <ScrollView>
-        <TouchableOpacity style={styles.datePicker} onPress={() => setShowDatePicker(true)}>
-          <Text style={styles.birthdayDate}>{`Your birthday: ${format(birthday, 'dd-MM-yyyy')}`}</Text>
-        </TouchableOpacity>
-        {showDatePicker && (
-          <DateTimePicker
-            value={birthday}
-            mode="date"
-            display="default"
-            onChange={(event, date) => {
-              if (!date || date == new Date()) {
-                alert('Please select a valid date');
-                return;
-              } else if (date > new Date()) {
-                alert('Please select a date in the past');
-                return;
-              };
-              setShowDatePicker(false);
-              setBirthday(date);
-            }}
-          />
-        )}
-        <Pressable style={styles.updateButton} onPress={() => { saveBirthday(birthday) }}>
-          <Text>Save birthday</Text>
-        </Pressable>
         <TextInput
           value={displayName}
           style={styles.input}
@@ -124,17 +80,6 @@ const styles = StyleSheet.create({
     backgroundColor: "burlywood",
   },
   input: {
-    backgroundColor: 'beige',
-    borderRadius: 15,
-    padding: 15,
-    marginBottom: 15,
-    width: '60%',
-    alignSelf: 'center',
-  },
-  birthdayDate: {
-    color: 'dimgrey',
-  },
-  datePicker: {
     backgroundColor: 'beige',
     borderRadius: 15,
     padding: 15,
