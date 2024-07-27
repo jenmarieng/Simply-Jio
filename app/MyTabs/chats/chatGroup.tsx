@@ -95,7 +95,7 @@ const ChatPage = () => {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={200}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 140}>
       <View style={styles.header}>
         <Pressable onPress={() => navigation.replace('ChatLists')}>
           <Icon name="arrow-back" size={28} color="grey" />
