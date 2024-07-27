@@ -426,58 +426,6 @@ const ScheduleAvailabilityScreen = () => {
             :
             <Text>Participants: {participantNames.join(', ')}</Text>
           }
-          {/* modal for confirm jio details or jio reminder frequency */}
-          <Modal
-            animationType="slide"
-            transparent={true}
-            visible={isModalVisible}
-            onRequestClose={() => setIsModalVisible(false)}
-          >
-            <View style={styles.modalContainer}>
-              <View style={styles.modalContent}>
-                <TouchableOpacity style={{ alignSelf: 'flex-end' }} onPress={() => {
-                  setIsModalVisible(false);
-                }}>
-                  <Icon name="close-outline" size={26} color="grey" />
-                </TouchableOpacity>
-                <Text>Frequency of group reminder to Jio:</Text>
-                {(currJioFrequency != 0) ?
-                  <Text>{currJioFrequency} days</Text>
-                  :
-                  <Text>It has not been set.</Text>
-                }
-                <ScrollView horizontal>
-                  <TouchableOpacity style={styles.freqButton} onPress={() => setJioFrequency(7)}>
-                    <Text>weekly</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.freqButton} onPress={() => setJioFrequency(14)}>
-                    <Text>fortnightly</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.freqButton} onPress={() => setJioFrequency(30)}>
-                    <Text>monthly</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.freqButton} onPress={() => setJioFrequency(60)}>
-                    <Text>every 2 months</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.freqButton} onPress={() => setJioFrequency(90)}>
-                    <Text>every 3 months</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.freqButton} onPress={() => setJioFrequency(180)}>
-                    <Text>every 6 months</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.freqButton} onPress={() => setJioFrequency(365)}>
-                    <Text>yearly</Text>
-                  </TouchableOpacity>
-                </ScrollView>
-                <Pressable style={styles.saveFreqButton} onPress={() => [handleReminderFrequencyChange(eventId, jioFrequency), setCurrJioFrequency(jioFrequency)]}>
-                  <Text>SAVE</Text>
-                </Pressable>
-                <Pressable style={styles.confirmJioButton} onPress={() => setIsConfirmJioModalVisible(true)}>
-                  <Text>CONFIRM JIO</Text>
-                </Pressable>
-              </View>
-            </View>
-          </Modal>
           {/* modal for confirming Jio and its details */}
           <Modal
             animationType="slide"
@@ -562,6 +510,58 @@ const ScheduleAvailabilityScreen = () => {
                 >
                   <Text>Save Event</Text>
                 </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+          {/* modal for choosing to confirm jio details or change jio reminder frequency */}
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={isModalVisible}
+            onRequestClose={() => setIsModalVisible(false)}
+          >
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <TouchableOpacity style={{ alignSelf: 'flex-end' }} onPress={() => {
+                  setIsModalVisible(false);
+                }}>
+                  <Icon name="close-outline" size={26} color="grey" />
+                </TouchableOpacity>
+                <Text>Frequency of group reminder to Jio:</Text>
+                {(currJioFrequency != 0) ?
+                  <Text>{currJioFrequency} days</Text>
+                  :
+                  <Text>It has not been set.</Text>
+                }
+                <ScrollView horizontal>
+                  <TouchableOpacity style={styles.freqButton} onPress={() => setJioFrequency(7)}>
+                    <Text>weekly</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.freqButton} onPress={() => setJioFrequency(14)}>
+                    <Text>fortnightly</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.freqButton} onPress={() => setJioFrequency(30)}>
+                    <Text>monthly</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.freqButton} onPress={() => setJioFrequency(60)}>
+                    <Text>every 2 months</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.freqButton} onPress={() => setJioFrequency(90)}>
+                    <Text>every 3 months</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.freqButton} onPress={() => setJioFrequency(180)}>
+                    <Text>every 6 months</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.freqButton} onPress={() => setJioFrequency(365)}>
+                    <Text>yearly</Text>
+                  </TouchableOpacity>
+                </ScrollView>
+                <Pressable style={styles.saveFreqButton} onPress={() => [handleReminderFrequencyChange(eventId, jioFrequency), setCurrJioFrequency(jioFrequency)]}>
+                  <Text>SAVE</Text>
+                </Pressable>
+                <Pressable style={styles.confirmJioButton} onPress={() => [setIsModalVisible(false), setIsConfirmJioModalVisible(true)]}>
+                  <Text>CONFIRM JIO</Text>
+                </Pressable>
               </View>
             </View>
           </Modal>
