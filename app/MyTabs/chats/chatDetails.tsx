@@ -63,13 +63,13 @@ const ChatDetails = () => {
     const handleDeleteChatGroup = async () => {
         await deleteChatGroup(id);
         setIsDeleteModalVisible(false);
-        navigation.replace('ChatLists');
+        navigation.navigate('ChatLists');
     }
 
     const handleLeaveChatGroup = async () => {
         await leaveChatGroup(id);
         setIsLeaveModalVisible(false);
-        navigation.replace('ChatLists');
+        navigation.navigate('ChatLists');
     }
 
     return (
