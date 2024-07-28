@@ -181,6 +181,7 @@ const styles = StyleSheet.create({
   },
   likedList: {
     maxHeight: '30%', // Limit the height of the liked list
+    backgroundColor: '#faf0e6',
   },
 });
 
