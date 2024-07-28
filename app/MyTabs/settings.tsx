@@ -1,11 +1,10 @@
 import * as React from 'react';
 import { useState } from 'react';
-import { Pressable, View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity } from 'react-native';
-import { handleUpdateDisplayName, handleUpdateUsername, handleUpdateEmail, handleUpdatePassword } from '../../components/userService';
+import { Pressable, View, Text, StyleSheet, TextInput, ScrollView } from 'react-native';
+import { handleUpdateDisplayName, handleUpdateUsername, handleUpdatePassword } from '../../components/userService';
 
 const Settings = () => {
   const [displayName, setDisplayName] = useState('');
-  const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [username, setUsername] = useState('');
 
@@ -31,16 +30,6 @@ const Settings = () => {
           <Text>Update username</Text>
         </Pressable>
         <TextInput
-          value={newEmail}
-          style={styles.input}
-          placeholder="Enter your new email"
-          onChangeText={(text) => setNewEmail(text)}
-          autoCapitalize='none'
-        />
-        <Pressable style={styles.updateButton} onPress={() => { handleUpdateEmail(newEmail), setNewEmail('') }}>
-          <Text>Update email</Text>
-        </Pressable>
-        <TextInput
           value={newPassword}
           style={styles.input}
           placeholder="Enter your new password"
@@ -59,7 +48,7 @@ const Settings = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingVertical: 30,
+    paddingTop: '10%',
     justifyContent: 'center',
     backgroundColor: 'wheat',
   },

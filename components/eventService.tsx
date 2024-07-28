@@ -268,7 +268,6 @@ export const getReminderFrequency = async (eventId: string) => {
   return eventData.reminderFrequency;
 }
 
-
 export const sendJioReminders = async () => {
   const user = firebaseAuth.currentUser;
   if (!user) {

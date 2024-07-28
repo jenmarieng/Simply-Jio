@@ -1,6 +1,6 @@
 import { firebaseAuth, db } from '../FirebaseConfig';
-import { updateProfile, updateEmail, updatePassword } from 'firebase/auth';
-import { doc, updateDoc, query, where, collection, getDocs, setDoc, getDoc, addDoc } from 'firebase/firestore';
+import { updateProfile, updatePassword } from 'firebase/auth';
+import { doc, updateDoc, query, where, collection, getDocs, setDoc, getDoc } from 'firebase/firestore';
 
 const updateUserDisplayName = async (userId: string, newName: string) => {
     try {
@@ -206,7 +206,10 @@ export const handleUpdateUsername = async (username: string) => {
         alert('Username is already set to ' + username);
         return;
     } else try {
-        checkIfUsernameExists(username);
+        if (await checkIfUsernameExists(username))
+        {
+            return;
+        }
         const userRef = doc(db, 'users', user.uid);
         const userDoc = await getDoc(userRef);
 
@@ -228,110 +231,6 @@ export const handleUpdateUsername = async (username: string) => {
     } catch (error) {
         alert('Error updating username!');
         console.error('Error updating username:', error);
-    }
-};
-
-const updateUserEmail = async (userId: string, newEmail: string) => {
-    try {
-        //Update email in groups collection
-        const groupsCollection = collection(db, 'groups');
-        const groupsQuerySnapshot = await getDocs(groupsCollection);
-        groupsQuerySnapshot.forEach(async (docSnapshot) => {
-            const groupData = docSnapshot.data();
-            let shouldUpdate = false;
-            const updatedGroupData = { ...groupData };
-
-            if (groupData.creator) {
-                updatedGroupData.creator = groupData.creator.map((creator: any) => {
-                    if (creator.userId === userId) {
-                        shouldUpdate = true;
-                        return { ...creator, email: newEmail };
-                    }
-                    return creator;
-                });
-            }
-
-            if (groupData.participants) {
-                updatedGroupData.participants = groupData.participants.map((participant: any) => {
-                    if (participant.userId === userId) {
-                        shouldUpdate = true;
-                        return { ...participant, email: newEmail };
-                    }
-                    return participant;
-                });
-            }
-
-            if (shouldUpdate) {
-                await updateDoc(doc(db, 'groups', docSnapshot.id), updatedGroupData);
-                console.log("Email updated successfully in group " + docSnapshot.id);
-            }
-        });
-
-        //Update email in events collection
-        const eventsCollection = collection(db, 'events');
-        const eventsQuerySnapshot = await getDocs(eventsCollection);
-        eventsQuerySnapshot.forEach(async (docSnapshot) => {
-            const eventData = docSnapshot.data();
-            let shouldUpdate = false;
-            const updatedEventData = { ...eventData };
-
-            if (eventData.creator) {
-                updatedEventData.creator = eventData.creator.map((creator: any) => {
-                    if (creator.userId === userId) {
-                        shouldUpdate = true;
-                        return { ...creator, email: newEmail };
-                    }
-                    return creator;
-                });
-            }
-
-            if (eventData.participants) {
-                updatedEventData.participants = eventData.participants.map((participant: any) => {
-                    if (participant.userId === userId) {
-                        shouldUpdate = true;
-                        return { ...participant, email: newEmail };
-                    }
-                    return participant;
-                });
-            }
-
-            if (shouldUpdate) {
-                await updateDoc(doc(db, 'events', docSnapshot.id), updatedEventData);
-                console.log("Email updated successfully in event " + docSnapshot.id);
-            }
-        });
-
-        console.log('User details updated successfully in all documents');
-    } catch (error) {
-        console.error('Error updating user details:', error);
-    }
-};
-
-export const handleUpdateEmail = async (newEmail: string) => {
-    const user = firebaseAuth.currentUser;
-
-    if (!user) {
-        return null;
-    }
-
-    if (newEmail === user.email) {
-        alert('Email is already set to ' + newEmail);
-        return;
-    } else if (!newEmail) {
-        alert('Email cannot be empty');
-        return;
-    } else try {
-        await updateEmail(user, newEmail);
-        const userRef = doc(db, 'users', user.uid);
-        await updateDoc(userRef, {
-            email: newEmail,
-        });
-        await updateUserEmail(user.uid, newEmail);
-        await user.reload();
-        alert('Email updated successfully');
-    } catch (error) {
-        alert('Error updating email!');
-        console.error('Error updating email:', error);
     }
 };
 

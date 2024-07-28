@@ -111,12 +111,13 @@ const styles = StyleSheet.create({
     },
     modalView: {
         margin: 20,
-        backgroundColor: '#ddeadd',
+        backgroundColor: 'white',
         borderRadius: 20,
         padding: 15,
         alignItems: 'center',
         justifyContent: 'center',
         elevation: 5,
+        marginTop: '50%',
     },
     input: {
         height: 40,

@@ -751,9 +751,9 @@ const ScheduleAvailabilityScreen = () => {
           <Button color='#e6a299' title="WEEK >>" onPress={() => setCurrentWeek(addWeeks(currentWeek, 1))} />
         </View>
         <ScrollView horizontal>
-          <View>
-            {renderTableHeader()}
-            <ScrollView>
+        <View>
+          {renderTableHeader()}
+          <ScrollView>
               {timeSlots.map(renderTimeSlotRow)}
             </ScrollView>
           </View>
