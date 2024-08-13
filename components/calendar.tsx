@@ -36,7 +36,6 @@ const App = () => {
   const [multiDay, setMultiDay] = useState<string[]>([]);
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
-  //const [multiDayMode, setMultiDayMode] = useState(false);
   const [events, setEvents] = useState<Events>({});
   const [isEditing, setIsEditing] = useState(false);
   const [editingEventId, setEditingEventId] = useState('');

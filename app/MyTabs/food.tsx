@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity, Image } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 import axios from 'axios';
 import { googlePlaces_api_key } from '../../apiKeys';
-import { getLikedPlaces, saveLikedPlace, removeLikedPlace } from '../likes';
+import { getLikedPlaces, saveLikedPlace, removeLikedPlace } from '../../components/likes';
 import { getAuth } from 'firebase/auth';
 import { firebaseApp } from '../../FirebaseConfig';
 import Icon from 'react-native-vector-icons/FontAwesome';
